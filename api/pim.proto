@@ -7,7 +7,7 @@ option go_package = "api/";
 
 service PimServer {
   //  通知事件模块
-  rpc UpdateEvent (TokenReq) returns (UpdateEventDataType);
+  rpc UpdateEvent (TokenReq) returns (stream UpdateEventDataType);
   //  鉴权模块
   rpc Register(RegisterReq) returns (BaseOk) ;
   rpc Login(LoginReq) returns (LoginResp) ;

@@ -98,6 +98,7 @@ func (s *server) Run() error {
 	//if err := srv.Shutdown(ctx); err != nil {
 	//	s.logger.Error("Server Shutdown err :", zap.Error(err))
 	//}
+	close(s.closeServer)
 	s.grpcd.GracefulStop()
 
 	select {
@@ -149,8 +150,9 @@ func RunApp(config *ImServerConfig) {
 
 	//
 	svr := &server{
-		logger: logger,
-		config: config,
+		logger:      logger,
+		config:      config,
+		closeServer: make(chan struct{}),
 	}
 	// 数据库日志
 	svr.dbLogger = &DBLogger{
@@ -179,7 +181,9 @@ func SetRpcService(port int) Option {
 	return func(svr *server) {
 		svr.rpc_port = port
 		svr.pim = &PimServer{
-			svr: svr,
+			svr:     svr,
+			rw:      new(sync.RWMutex),
+			clients: make(map[int64]*RpcClient, 128),
 		}
 
 		svr.grpcd = grpc.NewServer()

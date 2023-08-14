@@ -224,7 +224,7 @@ func (x LoginReq_LoginType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use LoginReq_LoginType.Descriptor instead.
 func (LoginReq_LoginType) EnumDescriptor() ([]byte, []int) {
-	return file_api_pim_proto_rawDescGZIP(), []int{6, 0}
+	return file_api_pim_proto_rawDescGZIP(), []int{9, 0}
 }
 
 type LoginReq_PlatformType int32
@@ -285,7 +285,7 @@ func (x LoginReq_PlatformType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use LoginReq_PlatformType.Descriptor instead.
 func (LoginReq_PlatformType) EnumDescriptor() ([]byte, []int) {
-	return file_api_pim_proto_rawDescGZIP(), []int{6, 1}
+	return file_api_pim_proto_rawDescGZIP(), []int{9, 1}
 }
 
 type SendMessageReq_MsgType int32
@@ -334,7 +334,7 @@ func (x SendMessageReq_MsgType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use SendMessageReq_MsgType.Descriptor instead.
 func (SendMessageReq_MsgType) EnumDescriptor() ([]byte, []int) {
-	return file_api_pim_proto_rawDescGZIP(), []int{11, 0}
+	return file_api_pim_proto_rawDescGZIP(), []int{14, 0}
 }
 
 // 登录的Token
@@ -528,6 +528,129 @@ func (x *ConnectSuccessDataType) GetStreamID() int64 {
 	return 0
 }
 
+type ConnectFailDataType struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+}
+
+func (x *ConnectFailDataType) Reset() {
+	*x = ConnectFailDataType{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_api_pim_proto_msgTypes[4]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *ConnectFailDataType) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ConnectFailDataType) ProtoMessage() {}
+
+func (x *ConnectFailDataType) ProtoReflect() protoreflect.Message {
+	mi := &file_api_pim_proto_msgTypes[4]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ConnectFailDataType.ProtoReflect.Descriptor instead.
+func (*ConnectFailDataType) Descriptor() ([]byte, []int) {
+	return file_api_pim_proto_rawDescGZIP(), []int{4}
+}
+
+type KickDeviceDataType struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+}
+
+func (x *KickDeviceDataType) Reset() {
+	*x = KickDeviceDataType{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_api_pim_proto_msgTypes[5]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *KickDeviceDataType) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*KickDeviceDataType) ProtoMessage() {}
+
+func (x *KickDeviceDataType) ProtoReflect() protoreflect.Message {
+	mi := &file_api_pim_proto_msgTypes[5]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use KickDeviceDataType.ProtoReflect.Descriptor instead.
+func (*KickDeviceDataType) Descriptor() ([]byte, []int) {
+	return file_api_pim_proto_rawDescGZIP(), []int{5}
+}
+
+type UpdateUserInfoDataType struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	UserInfo *UserInfoViewerDataType `protobuf:"bytes,1,opt,name=UserInfo,proto3" json:"UserInfo,omitempty"`
+}
+
+func (x *UpdateUserInfoDataType) Reset() {
+	*x = UpdateUserInfoDataType{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_api_pim_proto_msgTypes[6]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *UpdateUserInfoDataType) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateUserInfoDataType) ProtoMessage() {}
+
+func (x *UpdateUserInfoDataType) ProtoReflect() protoreflect.Message {
+	mi := &file_api_pim_proto_msgTypes[6]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateUserInfoDataType.ProtoReflect.Descriptor instead.
+func (*UpdateUserInfoDataType) Descriptor() ([]byte, []int) {
+	return file_api_pim_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *UpdateUserInfoDataType) GetUserInfo() *UserInfoViewerDataType {
+	if x != nil {
+		return x.UserInfo
+	}
+	return nil
+}
+
 type RegisterReq struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -541,7 +664,7 @@ type RegisterReq struct {
 func (x *RegisterReq) Reset() {
 	*x = RegisterReq{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_api_pim_proto_msgTypes[4]
+		mi := &file_api_pim_proto_msgTypes[7]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -554,7 +677,7 @@ func (x *RegisterReq) String() string {
 func (*RegisterReq) ProtoMessage() {}
 
 func (x *RegisterReq) ProtoReflect() protoreflect.Message {
-	mi := &file_api_pim_proto_msgTypes[4]
+	mi := &file_api_pim_proto_msgTypes[7]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -567,7 +690,7 @@ func (x *RegisterReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RegisterReq.ProtoReflect.Descriptor instead.
 func (*RegisterReq) Descriptor() ([]byte, []int) {
-	return file_api_pim_proto_rawDescGZIP(), []int{4}
+	return file_api_pim_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *RegisterReq) GetUsername() string {
@@ -603,7 +726,7 @@ type BaseOk struct {
 func (x *BaseOk) Reset() {
 	*x = BaseOk{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_api_pim_proto_msgTypes[5]
+		mi := &file_api_pim_proto_msgTypes[8]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -616,7 +739,7 @@ func (x *BaseOk) String() string {
 func (*BaseOk) ProtoMessage() {}
 
 func (x *BaseOk) ProtoReflect() protoreflect.Message {
-	mi := &file_api_pim_proto_msgTypes[5]
+	mi := &file_api_pim_proto_msgTypes[8]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -629,7 +752,7 @@ func (x *BaseOk) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BaseOk.ProtoReflect.Descriptor instead.
 func (*BaseOk) Descriptor() ([]byte, []int) {
-	return file_api_pim_proto_rawDescGZIP(), []int{5}
+	return file_api_pim_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *BaseOk) GetCode() int64 {
@@ -654,7 +777,7 @@ type LoginReq struct {
 func (x *LoginReq) Reset() {
 	*x = LoginReq{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_api_pim_proto_msgTypes[6]
+		mi := &file_api_pim_proto_msgTypes[9]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -667,7 +790,7 @@ func (x *LoginReq) String() string {
 func (*LoginReq) ProtoMessage() {}
 
 func (x *LoginReq) ProtoReflect() protoreflect.Message {
-	mi := &file_api_pim_proto_msgTypes[6]
+	mi := &file_api_pim_proto_msgTypes[9]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -680,7 +803,7 @@ func (x *LoginReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LoginReq.ProtoReflect.Descriptor instead.
 func (*LoginReq) Descriptor() ([]byte, []int) {
-	return file_api_pim_proto_rawDescGZIP(), []int{6}
+	return file_api_pim_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *LoginReq) GetType() *LoginReq {
@@ -729,7 +852,7 @@ type LoginResp struct {
 func (x *LoginResp) Reset() {
 	*x = LoginResp{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_api_pim_proto_msgTypes[7]
+		mi := &file_api_pim_proto_msgTypes[10]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -742,7 +865,7 @@ func (x *LoginResp) String() string {
 func (*LoginResp) ProtoMessage() {}
 
 func (x *LoginResp) ProtoReflect() protoreflect.Message {
-	mi := &file_api_pim_proto_msgTypes[7]
+	mi := &file_api_pim_proto_msgTypes[10]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -755,7 +878,7 @@ func (x *LoginResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LoginResp.ProtoReflect.Descriptor instead.
 func (*LoginResp) Descriptor() ([]byte, []int) {
-	return file_api_pim_proto_rawDescGZIP(), []int{7}
+	return file_api_pim_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *LoginResp) GetToken() string {
@@ -783,7 +906,7 @@ type UserInfoViewerDataType struct {
 func (x *UserInfoViewerDataType) Reset() {
 	*x = UserInfoViewerDataType{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_api_pim_proto_msgTypes[8]
+		mi := &file_api_pim_proto_msgTypes[11]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -796,7 +919,7 @@ func (x *UserInfoViewerDataType) String() string {
 func (*UserInfoViewerDataType) ProtoMessage() {}
 
 func (x *UserInfoViewerDataType) ProtoReflect() protoreflect.Message {
-	mi := &file_api_pim_proto_msgTypes[8]
+	mi := &file_api_pim_proto_msgTypes[11]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -809,7 +932,7 @@ func (x *UserInfoViewerDataType) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UserInfoViewerDataType.ProtoReflect.Descriptor instead.
 func (*UserInfoViewerDataType) Descriptor() ([]byte, []int) {
-	return file_api_pim_proto_rawDescGZIP(), []int{8}
+	return file_api_pim_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *UserInfoViewerDataType) GetUserID() int64 {
@@ -880,7 +1003,7 @@ type GetUserInfoByIDReq struct {
 func (x *GetUserInfoByIDReq) Reset() {
 	*x = GetUserInfoByIDReq{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_api_pim_proto_msgTypes[9]
+		mi := &file_api_pim_proto_msgTypes[12]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -893,7 +1016,7 @@ func (x *GetUserInfoByIDReq) String() string {
 func (*GetUserInfoByIDReq) ProtoMessage() {}
 
 func (x *GetUserInfoByIDReq) ProtoReflect() protoreflect.Message {
-	mi := &file_api_pim_proto_msgTypes[9]
+	mi := &file_api_pim_proto_msgTypes[12]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -906,7 +1029,7 @@ func (x *GetUserInfoByIDReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetUserInfoByIDReq.ProtoReflect.Descriptor instead.
 func (*GetUserInfoByIDReq) Descriptor() ([]byte, []int) {
-	return file_api_pim_proto_rawDescGZIP(), []int{9}
+	return file_api_pim_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *GetUserInfoByIDReq) GetStreamID() int64 {
@@ -937,7 +1060,7 @@ type AddUserToContactReq struct {
 func (x *AddUserToContactReq) Reset() {
 	*x = AddUserToContactReq{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_api_pim_proto_msgTypes[10]
+		mi := &file_api_pim_proto_msgTypes[13]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -950,7 +1073,7 @@ func (x *AddUserToContactReq) String() string {
 func (*AddUserToContactReq) ProtoMessage() {}
 
 func (x *AddUserToContactReq) ProtoReflect() protoreflect.Message {
-	mi := &file_api_pim_proto_msgTypes[10]
+	mi := &file_api_pim_proto_msgTypes[13]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -963,7 +1086,7 @@ func (x *AddUserToContactReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AddUserToContactReq.ProtoReflect.Descriptor instead.
 func (*AddUserToContactReq) Descriptor() ([]byte, []int) {
-	return file_api_pim_proto_rawDescGZIP(), []int{10}
+	return file_api_pim_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *AddUserToContactReq) GetStreamID() int64 {
@@ -1015,19 +1138,20 @@ type SendMessageReq struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	StreamID         int64             `protobuf:"varint,1,opt,name=StreamID,proto3" json:"StreamID,omitempty"` // 这是必须的
-	ChatID           int64             `protobuf:"varint,2,opt,name=ChatID,proto3" json:"ChatID,omitempty"`
-	ReplyToMessageID int64             `protobuf:"varint,3,opt,name=ReplyToMessageID,proto3" json:"ReplyToMessageID,omitempty"`
-	ReplyInChatID    int64             `protobuf:"varint,4,opt,name=ReplyInChatID,proto3" json:"ReplyInChatID,omitempty"`
-	MessageText      string            `protobuf:"bytes,5,opt,name=MessageText,proto3" json:"MessageText,omitempty"`         // 这是文本消息 每个消息都会有文本的部分
-	ImageContent     *MessageTypeImage `protobuf:"bytes,6,opt,name=ImageContent,proto3,oneof" json:"ImageContent,omitempty"` // 可选类型 当消息类型是图片的时候会有图片信息
-	Params           map[string]string `protobuf:"bytes,7,rep,name=Params,proto3" json:"Params,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	StreamID         int64  `protobuf:"varint,1,opt,name=StreamID,proto3" json:"StreamID,omitempty"` // 这是必须的
+	ChatID           int64  `protobuf:"varint,2,opt,name=ChatID,proto3" json:"ChatID,omitempty"`
+	ReplyToMessageID int64  `protobuf:"varint,3,opt,name=ReplyToMessageID,proto3" json:"ReplyToMessageID,omitempty"`
+	ReplyInChatID    int64  `protobuf:"varint,4,opt,name=ReplyInChatID,proto3" json:"ReplyInChatID,omitempty"`
+	MessageText      string `protobuf:"bytes,5,opt,name=MessageText,proto3" json:"MessageText,omitempty"` // 这是文本消息 每个消息都会有文本的部分
+	//   Attach 被拆分成不同不同的子类型
+	ImageContent *MessageTypeImage `protobuf:"bytes,6,opt,name=ImageContent,proto3,oneof" json:"ImageContent,omitempty"` // 可选类型 当消息类型是图片的时候会有图片信息
+	Params       map[string]string `protobuf:"bytes,7,rep,name=Params,proto3" json:"Params,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 }
 
 func (x *SendMessageReq) Reset() {
 	*x = SendMessageReq{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_api_pim_proto_msgTypes[11]
+		mi := &file_api_pim_proto_msgTypes[14]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1040,7 +1164,7 @@ func (x *SendMessageReq) String() string {
 func (*SendMessageReq) ProtoMessage() {}
 
 func (x *SendMessageReq) ProtoReflect() protoreflect.Message {
-	mi := &file_api_pim_proto_msgTypes[11]
+	mi := &file_api_pim_proto_msgTypes[14]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1053,7 +1177,7 @@ func (x *SendMessageReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SendMessageReq.ProtoReflect.Descriptor instead.
 func (*SendMessageReq) Descriptor() ([]byte, []int) {
-	return file_api_pim_proto_rawDescGZIP(), []int{11}
+	return file_api_pim_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *SendMessageReq) GetStreamID() int64 {
@@ -1117,7 +1241,7 @@ type MessageTypeImage struct {
 func (x *MessageTypeImage) Reset() {
 	*x = MessageTypeImage{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_api_pim_proto_msgTypes[12]
+		mi := &file_api_pim_proto_msgTypes[15]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1130,7 +1254,7 @@ func (x *MessageTypeImage) String() string {
 func (*MessageTypeImage) ProtoMessage() {}
 
 func (x *MessageTypeImage) ProtoReflect() protoreflect.Message {
-	mi := &file_api_pim_proto_msgTypes[12]
+	mi := &file_api_pim_proto_msgTypes[15]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1143,7 +1267,7 @@ func (x *MessageTypeImage) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MessageTypeImage.ProtoReflect.Descriptor instead.
 func (*MessageTypeImage) Descriptor() ([]byte, []int) {
-	return file_api_pim_proto_rawDescGZIP(), []int{12}
+	return file_api_pim_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *MessageTypeImage) GetImageBuffer() []byte {
@@ -1162,7 +1286,7 @@ type SendMessageResp struct {
 func (x *SendMessageResp) Reset() {
 	*x = SendMessageResp{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_api_pim_proto_msgTypes[13]
+		mi := &file_api_pim_proto_msgTypes[16]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1175,7 +1299,7 @@ func (x *SendMessageResp) String() string {
 func (*SendMessageResp) ProtoMessage() {}
 
 func (x *SendMessageResp) ProtoReflect() protoreflect.Message {
-	mi := &file_api_pim_proto_msgTypes[13]
+	mi := &file_api_pim_proto_msgTypes[16]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1188,7 +1312,7 @@ func (x *SendMessageResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SendMessageResp.ProtoReflect.Descriptor instead.
 func (*SendMessageResp) Descriptor() ([]byte, []int) {
-	return file_api_pim_proto_rawDescGZIP(), []int{13}
+	return file_api_pim_proto_rawDescGZIP(), []int{16}
 }
 
 var File_api_pim_proto protoreflect.FileDescriptor
@@ -1217,7 +1341,15 @@ var file_api_pim_proto_rawDesc = []byte{
 	0x6f, 0x6e, 0x6e, 0x65, 0x63, 0x74, 0x53, 0x75, 0x63, 0x63, 0x65, 0x73, 0x73, 0x44, 0x61, 0x74,
 	0x61, 0x54, 0x79, 0x70, 0x65, 0x12, 0x1a, 0x0a, 0x08, 0x53, 0x74, 0x72, 0x65, 0x61, 0x6d, 0x49,
 	0x44, 0x18, 0x01, 0x20, 0x01, 0x28, 0x03, 0x52, 0x08, 0x53, 0x74, 0x72, 0x65, 0x61, 0x6d, 0x49,
-	0x44, 0x22, 0x5b, 0x0a, 0x0b, 0x52, 0x65, 0x67, 0x69, 0x73, 0x74, 0x65, 0x72, 0x52, 0x65, 0x71,
+	0x44, 0x22, 0x15, 0x0a, 0x13, 0x43, 0x6f, 0x6e, 0x6e, 0x65, 0x63, 0x74, 0x46, 0x61, 0x69, 0x6c,
+	0x44, 0x61, 0x74, 0x61, 0x54, 0x79, 0x70, 0x65, 0x22, 0x14, 0x0a, 0x12, 0x4b, 0x69, 0x63, 0x6b,
+	0x44, 0x65, 0x76, 0x69, 0x63, 0x65, 0x44, 0x61, 0x74, 0x61, 0x54, 0x79, 0x70, 0x65, 0x22, 0x51,
+	0x0a, 0x16, 0x55, 0x70, 0x64, 0x61, 0x74, 0x65, 0x55, 0x73, 0x65, 0x72, 0x49, 0x6e, 0x66, 0x6f,
+	0x44, 0x61, 0x74, 0x61, 0x54, 0x79, 0x70, 0x65, 0x12, 0x37, 0x0a, 0x08, 0x55, 0x73, 0x65, 0x72,
+	0x49, 0x6e, 0x66, 0x6f, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1b, 0x2e, 0x61, 0x70, 0x69,
+	0x2e, 0x55, 0x73, 0x65, 0x72, 0x49, 0x6e, 0x66, 0x6f, 0x56, 0x69, 0x65, 0x77, 0x65, 0x72, 0x44,
+	0x61, 0x74, 0x61, 0x54, 0x79, 0x70, 0x65, 0x52, 0x08, 0x55, 0x73, 0x65, 0x72, 0x49, 0x6e, 0x66,
+	0x6f, 0x22, 0x5b, 0x0a, 0x0b, 0x52, 0x65, 0x67, 0x69, 0x73, 0x74, 0x65, 0x72, 0x52, 0x65, 0x71,
 	0x12, 0x1a, 0x0a, 0x08, 0x55, 0x73, 0x65, 0x72, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x01, 0x20, 0x01,
 	0x28, 0x09, 0x52, 0x08, 0x55, 0x73, 0x65, 0x72, 0x6e, 0x61, 0x6d, 0x65, 0x12, 0x1a, 0x0a, 0x08,
 	0x50, 0x61, 0x73, 0x73, 0x77, 0x6f, 0x72, 0x64, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x08,
@@ -1317,33 +1449,33 @@ var file_api_pim_proto_rawDesc = []byte{
 	0x2f, 0x0a, 0x10, 0x55, 0x73, 0x65, 0x72, 0x54, 0x79, 0x70, 0x65, 0x45, 0x6e, 0x75, 0x6d, 0x54,
 	0x79, 0x70, 0x65, 0x12, 0x1b, 0x0a, 0x17, 0x55, 0x73, 0x65, 0x72, 0x54, 0x79, 0x70, 0x65, 0x45,
 	0x6e, 0x75, 0x6d, 0x54, 0x79, 0x70, 0x65, 0x55, 0x6e, 0x6b, 0x6e, 0x6f, 0x77, 0x6e, 0x10, 0x00,
-	0x32, 0x92, 0x03, 0x0a, 0x09, 0x50, 0x69, 0x6d, 0x53, 0x65, 0x72, 0x76, 0x65, 0x72, 0x12, 0x36,
+	0x32, 0x94, 0x03, 0x0a, 0x09, 0x50, 0x69, 0x6d, 0x53, 0x65, 0x72, 0x76, 0x65, 0x72, 0x12, 0x38,
 	0x0a, 0x0b, 0x55, 0x70, 0x64, 0x61, 0x74, 0x65, 0x45, 0x76, 0x65, 0x6e, 0x74, 0x12, 0x0d, 0x2e,
 	0x61, 0x70, 0x69, 0x2e, 0x54, 0x6f, 0x6b, 0x65, 0x6e, 0x52, 0x65, 0x71, 0x1a, 0x18, 0x2e, 0x61,
 	0x70, 0x69, 0x2e, 0x55, 0x70, 0x64, 0x61, 0x74, 0x65, 0x45, 0x76, 0x65, 0x6e, 0x74, 0x44, 0x61,
-	0x74, 0x61, 0x54, 0x79, 0x70, 0x65, 0x12, 0x29, 0x0a, 0x08, 0x52, 0x65, 0x67, 0x69, 0x73, 0x74,
-	0x65, 0x72, 0x12, 0x10, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x52, 0x65, 0x67, 0x69, 0x73, 0x74, 0x65,
-	0x72, 0x52, 0x65, 0x71, 0x1a, 0x0b, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x42, 0x61, 0x73, 0x65, 0x4f,
-	0x6b, 0x12, 0x26, 0x0a, 0x05, 0x4c, 0x6f, 0x67, 0x69, 0x6e, 0x12, 0x0d, 0x2e, 0x61, 0x70, 0x69,
-	0x2e, 0x4c, 0x6f, 0x67, 0x69, 0x6e, 0x52, 0x65, 0x71, 0x1a, 0x0e, 0x2e, 0x61, 0x70, 0x69, 0x2e,
-	0x4c, 0x6f, 0x67, 0x69, 0x6e, 0x52, 0x65, 0x73, 0x70, 0x12, 0x3c, 0x0a, 0x0d, 0x47, 0x65, 0x74,
-	0x4d, 0x79, 0x55, 0x73, 0x65, 0x72, 0x49, 0x6e, 0x66, 0x6f, 0x12, 0x0e, 0x2e, 0x61, 0x70, 0x69,
-	0x2e, 0x53, 0x74, 0x72, 0x65, 0x61, 0x6d, 0x52, 0x65, 0x71, 0x1a, 0x1b, 0x2e, 0x61, 0x70, 0x69,
-	0x2e, 0x55, 0x73, 0x65, 0x72, 0x49, 0x6e, 0x66, 0x6f, 0x56, 0x69, 0x65, 0x77, 0x65, 0x72, 0x44,
-	0x61, 0x74, 0x61, 0x54, 0x79, 0x70, 0x65, 0x12, 0x47, 0x0a, 0x0f, 0x47, 0x65, 0x74, 0x55, 0x73,
-	0x65, 0x72, 0x49, 0x6e, 0x66, 0x6f, 0x42, 0x79, 0x49, 0x44, 0x12, 0x17, 0x2e, 0x61, 0x70, 0x69,
-	0x2e, 0x47, 0x65, 0x74, 0x55, 0x73, 0x65, 0x72, 0x49, 0x6e, 0x66, 0x6f, 0x42, 0x79, 0x49, 0x44,
-	0x52, 0x65, 0x71, 0x1a, 0x1b, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x55, 0x73, 0x65, 0x72, 0x49, 0x6e,
-	0x66, 0x6f, 0x56, 0x69, 0x65, 0x77, 0x65, 0x72, 0x44, 0x61, 0x74, 0x61, 0x54, 0x79, 0x70, 0x65,
-	0x12, 0x39, 0x0a, 0x10, 0x41, 0x64, 0x64, 0x55, 0x73, 0x65, 0x72, 0x54, 0x6f, 0x43, 0x6f, 0x6e,
-	0x74, 0x61, 0x63, 0x74, 0x12, 0x18, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x41, 0x64, 0x64, 0x55, 0x73,
-	0x65, 0x72, 0x54, 0x6f, 0x43, 0x6f, 0x6e, 0x74, 0x61, 0x63, 0x74, 0x52, 0x65, 0x71, 0x1a, 0x0b,
-	0x2e, 0x61, 0x70, 0x69, 0x2e, 0x42, 0x61, 0x73, 0x65, 0x4f, 0x6b, 0x12, 0x38, 0x0a, 0x0b, 0x53,
-	0x65, 0x6e, 0x64, 0x4d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x12, 0x13, 0x2e, 0x61, 0x70, 0x69,
-	0x2e, 0x53, 0x65, 0x6e, 0x64, 0x4d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x52, 0x65, 0x71, 0x1a,
-	0x14, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x53, 0x65, 0x6e, 0x64, 0x4d, 0x65, 0x73, 0x73, 0x61, 0x67,
-	0x65, 0x52, 0x65, 0x73, 0x70, 0x42, 0x06, 0x5a, 0x04, 0x61, 0x70, 0x69, 0x2f, 0x62, 0x06, 0x70,
-	0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x74, 0x61, 0x54, 0x79, 0x70, 0x65, 0x30, 0x01, 0x12, 0x29, 0x0a, 0x08, 0x52, 0x65, 0x67, 0x69,
+	0x73, 0x74, 0x65, 0x72, 0x12, 0x10, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x52, 0x65, 0x67, 0x69, 0x73,
+	0x74, 0x65, 0x72, 0x52, 0x65, 0x71, 0x1a, 0x0b, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x42, 0x61, 0x73,
+	0x65, 0x4f, 0x6b, 0x12, 0x26, 0x0a, 0x05, 0x4c, 0x6f, 0x67, 0x69, 0x6e, 0x12, 0x0d, 0x2e, 0x61,
+	0x70, 0x69, 0x2e, 0x4c, 0x6f, 0x67, 0x69, 0x6e, 0x52, 0x65, 0x71, 0x1a, 0x0e, 0x2e, 0x61, 0x70,
+	0x69, 0x2e, 0x4c, 0x6f, 0x67, 0x69, 0x6e, 0x52, 0x65, 0x73, 0x70, 0x12, 0x3c, 0x0a, 0x0d, 0x47,
+	0x65, 0x74, 0x4d, 0x79, 0x55, 0x73, 0x65, 0x72, 0x49, 0x6e, 0x66, 0x6f, 0x12, 0x0e, 0x2e, 0x61,
+	0x70, 0x69, 0x2e, 0x53, 0x74, 0x72, 0x65, 0x61, 0x6d, 0x52, 0x65, 0x71, 0x1a, 0x1b, 0x2e, 0x61,
+	0x70, 0x69, 0x2e, 0x55, 0x73, 0x65, 0x72, 0x49, 0x6e, 0x66, 0x6f, 0x56, 0x69, 0x65, 0x77, 0x65,
+	0x72, 0x44, 0x61, 0x74, 0x61, 0x54, 0x79, 0x70, 0x65, 0x12, 0x47, 0x0a, 0x0f, 0x47, 0x65, 0x74,
+	0x55, 0x73, 0x65, 0x72, 0x49, 0x6e, 0x66, 0x6f, 0x42, 0x79, 0x49, 0x44, 0x12, 0x17, 0x2e, 0x61,
+	0x70, 0x69, 0x2e, 0x47, 0x65, 0x74, 0x55, 0x73, 0x65, 0x72, 0x49, 0x6e, 0x66, 0x6f, 0x42, 0x79,
+	0x49, 0x44, 0x52, 0x65, 0x71, 0x1a, 0x1b, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x55, 0x73, 0x65, 0x72,
+	0x49, 0x6e, 0x66, 0x6f, 0x56, 0x69, 0x65, 0x77, 0x65, 0x72, 0x44, 0x61, 0x74, 0x61, 0x54, 0x79,
+	0x70, 0x65, 0x12, 0x39, 0x0a, 0x10, 0x41, 0x64, 0x64, 0x55, 0x73, 0x65, 0x72, 0x54, 0x6f, 0x43,
+	0x6f, 0x6e, 0x74, 0x61, 0x63, 0x74, 0x12, 0x18, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x41, 0x64, 0x64,
+	0x55, 0x73, 0x65, 0x72, 0x54, 0x6f, 0x43, 0x6f, 0x6e, 0x74, 0x61, 0x63, 0x74, 0x52, 0x65, 0x71,
+	0x1a, 0x0b, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x42, 0x61, 0x73, 0x65, 0x4f, 0x6b, 0x12, 0x38, 0x0a,
+	0x0b, 0x53, 0x65, 0x6e, 0x64, 0x4d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x12, 0x13, 0x2e, 0x61,
+	0x70, 0x69, 0x2e, 0x53, 0x65, 0x6e, 0x64, 0x4d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x52, 0x65,
+	0x71, 0x1a, 0x14, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x53, 0x65, 0x6e, 0x64, 0x4d, 0x65, 0x73, 0x73,
+	0x61, 0x67, 0x65, 0x52, 0x65, 0x73, 0x70, 0x42, 0x06, 0x5a, 0x04, 0x61, 0x70, 0x69, 0x2f, 0x62,
+	0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -1359,7 +1491,7 @@ func file_api_pim_proto_rawDescGZIP() []byte {
 }
 
 var file_api_pim_proto_enumTypes = make([]protoimpl.EnumInfo, 6)
-var file_api_pim_proto_msgTypes = make([]protoimpl.MessageInfo, 15)
+var file_api_pim_proto_msgTypes = make([]protoimpl.MessageInfo, 18)
 var file_api_pim_proto_goTypes = []interface{}{
 	(UserStatusEnumType)(0),        // 0: api.UserStatusEnumType
 	(UserTypeEnumType)(0),          // 1: api.UserTypeEnumType
@@ -1371,46 +1503,50 @@ var file_api_pim_proto_goTypes = []interface{}{
 	(*StreamReq)(nil),              // 7: api.StreamReq
 	(*UpdateEventDataType)(nil),    // 8: api.UpdateEventDataType
 	(*ConnectSuccessDataType)(nil), // 9: api.ConnectSuccessDataType
-	(*RegisterReq)(nil),            // 10: api.RegisterReq
-	(*BaseOk)(nil),                 // 11: api.BaseOk
-	(*LoginReq)(nil),               // 12: api.LoginReq
-	(*LoginResp)(nil),              // 13: api.LoginResp
-	(*UserInfoViewerDataType)(nil), // 14: api.UserInfoViewerDataType
-	(*GetUserInfoByIDReq)(nil),     // 15: api.GetUserInfoByIDReq
-	(*AddUserToContactReq)(nil),    // 16: api.AddUserToContactReq
-	(*SendMessageReq)(nil),         // 17: api.SendMessageReq
-	(*MessageTypeImage)(nil),       // 18: api.MessageTypeImage
-	(*SendMessageResp)(nil),        // 19: api.SendMessageResp
-	nil,                            // 20: api.SendMessageReq.ParamsEntry
-	(*anypb.Any)(nil),              // 21: google.protobuf.Any
+	(*ConnectFailDataType)(nil),    // 10: api.ConnectFailDataType
+	(*KickDeviceDataType)(nil),     // 11: api.KickDeviceDataType
+	(*UpdateUserInfoDataType)(nil), // 12: api.UpdateUserInfoDataType
+	(*RegisterReq)(nil),            // 13: api.RegisterReq
+	(*BaseOk)(nil),                 // 14: api.BaseOk
+	(*LoginReq)(nil),               // 15: api.LoginReq
+	(*LoginResp)(nil),              // 16: api.LoginResp
+	(*UserInfoViewerDataType)(nil), // 17: api.UserInfoViewerDataType
+	(*GetUserInfoByIDReq)(nil),     // 18: api.GetUserInfoByIDReq
+	(*AddUserToContactReq)(nil),    // 19: api.AddUserToContactReq
+	(*SendMessageReq)(nil),         // 20: api.SendMessageReq
+	(*MessageTypeImage)(nil),       // 21: api.MessageTypeImage
+	(*SendMessageResp)(nil),        // 22: api.SendMessageResp
+	nil,                            // 23: api.SendMessageReq.ParamsEntry
+	(*anypb.Any)(nil),              // 24: google.protobuf.Any
 }
 var file_api_pim_proto_depIdxs = []int32{
-	21, // 0: api.UpdateEventDataType.body:type_name -> google.protobuf.Any
-	12, // 1: api.LoginReq.Type:type_name -> api.LoginReq
-	4,  // 2: api.LoginReq.Platform:type_name -> api.LoginReq.PlatformType
-	0,  // 3: api.UserInfoViewerDataType.UserStatus:type_name -> api.UserStatusEnumType
-	1,  // 4: api.UserInfoViewerDataType.UserType:type_name -> api.UserTypeEnumType
-	18, // 5: api.SendMessageReq.ImageContent:type_name -> api.MessageTypeImage
-	20, // 6: api.SendMessageReq.Params:type_name -> api.SendMessageReq.ParamsEntry
-	6,  // 7: api.PimServer.UpdateEvent:input_type -> api.TokenReq
-	10, // 8: api.PimServer.Register:input_type -> api.RegisterReq
-	12, // 9: api.PimServer.Login:input_type -> api.LoginReq
-	7,  // 10: api.PimServer.GetMyUserInfo:input_type -> api.StreamReq
-	15, // 11: api.PimServer.GetUserInfoByID:input_type -> api.GetUserInfoByIDReq
-	16, // 12: api.PimServer.AddUserToContact:input_type -> api.AddUserToContactReq
-	17, // 13: api.PimServer.SendMessage:input_type -> api.SendMessageReq
-	8,  // 14: api.PimServer.UpdateEvent:output_type -> api.UpdateEventDataType
-	11, // 15: api.PimServer.Register:output_type -> api.BaseOk
-	13, // 16: api.PimServer.Login:output_type -> api.LoginResp
-	14, // 17: api.PimServer.GetMyUserInfo:output_type -> api.UserInfoViewerDataType
-	14, // 18: api.PimServer.GetUserInfoByID:output_type -> api.UserInfoViewerDataType
-	11, // 19: api.PimServer.AddUserToContact:output_type -> api.BaseOk
-	19, // 20: api.PimServer.SendMessage:output_type -> api.SendMessageResp
-	14, // [14:21] is the sub-list for method output_type
-	7,  // [7:14] is the sub-list for method input_type
-	7,  // [7:7] is the sub-list for extension type_name
-	7,  // [7:7] is the sub-list for extension extendee
-	0,  // [0:7] is the sub-list for field type_name
+	24, // 0: api.UpdateEventDataType.body:type_name -> google.protobuf.Any
+	17, // 1: api.UpdateUserInfoDataType.UserInfo:type_name -> api.UserInfoViewerDataType
+	15, // 2: api.LoginReq.Type:type_name -> api.LoginReq
+	4,  // 3: api.LoginReq.Platform:type_name -> api.LoginReq.PlatformType
+	0,  // 4: api.UserInfoViewerDataType.UserStatus:type_name -> api.UserStatusEnumType
+	1,  // 5: api.UserInfoViewerDataType.UserType:type_name -> api.UserTypeEnumType
+	21, // 6: api.SendMessageReq.ImageContent:type_name -> api.MessageTypeImage
+	23, // 7: api.SendMessageReq.Params:type_name -> api.SendMessageReq.ParamsEntry
+	6,  // 8: api.PimServer.UpdateEvent:input_type -> api.TokenReq
+	13, // 9: api.PimServer.Register:input_type -> api.RegisterReq
+	15, // 10: api.PimServer.Login:input_type -> api.LoginReq
+	7,  // 11: api.PimServer.GetMyUserInfo:input_type -> api.StreamReq
+	18, // 12: api.PimServer.GetUserInfoByID:input_type -> api.GetUserInfoByIDReq
+	19, // 13: api.PimServer.AddUserToContact:input_type -> api.AddUserToContactReq
+	20, // 14: api.PimServer.SendMessage:input_type -> api.SendMessageReq
+	8,  // 15: api.PimServer.UpdateEvent:output_type -> api.UpdateEventDataType
+	14, // 16: api.PimServer.Register:output_type -> api.BaseOk
+	16, // 17: api.PimServer.Login:output_type -> api.LoginResp
+	17, // 18: api.PimServer.GetMyUserInfo:output_type -> api.UserInfoViewerDataType
+	17, // 19: api.PimServer.GetUserInfoByID:output_type -> api.UserInfoViewerDataType
+	14, // 20: api.PimServer.AddUserToContact:output_type -> api.BaseOk
+	22, // 21: api.PimServer.SendMessage:output_type -> api.SendMessageResp
+	15, // [15:22] is the sub-list for method output_type
+	8,  // [8:15] is the sub-list for method input_type
+	8,  // [8:8] is the sub-list for extension type_name
+	8,  // [8:8] is the sub-list for extension extendee
+	0,  // [0:8] is the sub-list for field type_name
 }
 
 func init() { file_api_pim_proto_init() }
@@ -1468,7 +1604,7 @@ func file_api_pim_proto_init() {
 			}
 		}
 		file_api_pim_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*RegisterReq); i {
+			switch v := v.(*ConnectFailDataType); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1480,7 +1616,7 @@ func file_api_pim_proto_init() {
 			}
 		}
 		file_api_pim_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*BaseOk); i {
+			switch v := v.(*KickDeviceDataType); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1492,7 +1628,7 @@ func file_api_pim_proto_init() {
 			}
 		}
 		file_api_pim_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*LoginReq); i {
+			switch v := v.(*UpdateUserInfoDataType); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1504,7 +1640,7 @@ func file_api_pim_proto_init() {
 			}
 		}
 		file_api_pim_proto_msgTypes[7].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*LoginResp); i {
+			switch v := v.(*RegisterReq); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1516,7 +1652,7 @@ func file_api_pim_proto_init() {
 			}
 		}
 		file_api_pim_proto_msgTypes[8].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*UserInfoViewerDataType); i {
+			switch v := v.(*BaseOk); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1528,7 +1664,7 @@ func file_api_pim_proto_init() {
 			}
 		}
 		file_api_pim_proto_msgTypes[9].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*GetUserInfoByIDReq); i {
+			switch v := v.(*LoginReq); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1540,7 +1676,7 @@ func file_api_pim_proto_init() {
 			}
 		}
 		file_api_pim_proto_msgTypes[10].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*AddUserToContactReq); i {
+			switch v := v.(*LoginResp); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1552,7 +1688,7 @@ func file_api_pim_proto_init() {
 			}
 		}
 		file_api_pim_proto_msgTypes[11].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*SendMessageReq); i {
+			switch v := v.(*UserInfoViewerDataType); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1564,7 +1700,7 @@ func file_api_pim_proto_init() {
 			}
 		}
 		file_api_pim_proto_msgTypes[12].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*MessageTypeImage); i {
+			switch v := v.(*GetUserInfoByIDReq); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1576,6 +1712,42 @@ func file_api_pim_proto_init() {
 			}
 		}
 		file_api_pim_proto_msgTypes[13].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*AddUserToContactReq); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_api_pim_proto_msgTypes[14].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*SendMessageReq); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_api_pim_proto_msgTypes[15].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*MessageTypeImage); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_api_pim_proto_msgTypes[16].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*SendMessageResp); i {
 			case 0:
 				return &v.state
@@ -1588,14 +1760,14 @@ func file_api_pim_proto_init() {
 			}
 		}
 	}
-	file_api_pim_proto_msgTypes[11].OneofWrappers = []interface{}{}
+	file_api_pim_proto_msgTypes[14].OneofWrappers = []interface{}{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_api_pim_proto_rawDesc,
 			NumEnums:      6,
-			NumMessages:   15,
+			NumMessages:   18,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
@@ -1623,7 +1795,7 @@ const _ = grpc.SupportPackageIsVersion6
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type PimServerClient interface {
 	//  通知事件模块
-	UpdateEvent(ctx context.Context, in *TokenReq, opts ...grpc.CallOption) (*UpdateEventDataType, error)
+	UpdateEvent(ctx context.Context, in *TokenReq, opts ...grpc.CallOption) (PimServer_UpdateEventClient, error)
 	//  鉴权模块
 	Register(ctx context.Context, in *RegisterReq, opts ...grpc.CallOption) (*BaseOk, error)
 	Login(ctx context.Context, in *LoginReq, opts ...grpc.CallOption) (*LoginResp, error)
@@ -1643,13 +1815,36 @@ func NewPimServerClient(cc grpc.ClientConnInterface) PimServerClient {
 	return &pimServerClient{cc}
 }
 
-func (c *pimServerClient) UpdateEvent(ctx context.Context, in *TokenReq, opts ...grpc.CallOption) (*UpdateEventDataType, error) {
-	out := new(UpdateEventDataType)
-	err := c.cc.Invoke(ctx, "/api.PimServer/UpdateEvent", in, out, opts...)
+func (c *pimServerClient) UpdateEvent(ctx context.Context, in *TokenReq, opts ...grpc.CallOption) (PimServer_UpdateEventClient, error) {
+	stream, err := c.cc.NewStream(ctx, &_PimServer_serviceDesc.Streams[0], "/api.PimServer/UpdateEvent", opts...)
 	if err != nil {
 		return nil, err
 	}
-	return out, nil
+	x := &pimServerUpdateEventClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type PimServer_UpdateEventClient interface {
+	Recv() (*UpdateEventDataType, error)
+	grpc.ClientStream
+}
+
+type pimServerUpdateEventClient struct {
+	grpc.ClientStream
+}
+
+func (x *pimServerUpdateEventClient) Recv() (*UpdateEventDataType, error) {
+	m := new(UpdateEventDataType)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
 }
 
 func (c *pimServerClient) Register(ctx context.Context, in *RegisterReq, opts ...grpc.CallOption) (*BaseOk, error) {
@@ -1709,7 +1904,7 @@ func (c *pimServerClient) SendMessage(ctx context.Context, in *SendMessageReq, o
 // PimServerServer is the server API for PimServer service.
 type PimServerServer interface {
 	//  通知事件模块
-	UpdateEvent(context.Context, *TokenReq) (*UpdateEventDataType, error)
+	UpdateEvent(*TokenReq, PimServer_UpdateEventServer) error
 	//  鉴权模块
 	Register(context.Context, *RegisterReq) (*BaseOk, error)
 	Login(context.Context, *LoginReq) (*LoginResp, error)
@@ -1725,8 +1920,8 @@ type PimServerServer interface {
 type UnimplementedPimServerServer struct {
 }
 
-func (*UnimplementedPimServerServer) UpdateEvent(context.Context, *TokenReq) (*UpdateEventDataType, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method UpdateEvent not implemented")
+func (*UnimplementedPimServerServer) UpdateEvent(*TokenReq, PimServer_UpdateEventServer) error {
+	return status.Errorf(codes.Unimplemented, "method UpdateEvent not implemented")
 }
 func (*UnimplementedPimServerServer) Register(context.Context, *RegisterReq) (*BaseOk, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Register not implemented")
@@ -1751,22 +1946,25 @@ func RegisterPimServerServer(s *grpc.Server, srv PimServerServer) {
 	s.RegisterService(&_PimServer_serviceDesc, srv)
 }
 
-func _PimServer_UpdateEvent_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(TokenReq)
-	if err := dec(in); err != nil {
-		return nil, err
+func _PimServer_UpdateEvent_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(TokenReq)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
 	}
-	if interceptor == nil {
-		return srv.(PimServerServer).UpdateEvent(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/api.PimServer/UpdateEvent",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(PimServerServer).UpdateEvent(ctx, req.(*TokenReq))
-	}
-	return interceptor(ctx, in, info, handler)
+	return srv.(PimServerServer).UpdateEvent(m, &pimServerUpdateEventServer{stream})
+}
+
+type PimServer_UpdateEventServer interface {
+	Send(*UpdateEventDataType) error
+	grpc.ServerStream
+}
+
+type pimServerUpdateEventServer struct {
+	grpc.ServerStream
+}
+
+func (x *pimServerUpdateEventServer) Send(m *UpdateEventDataType) error {
+	return x.ServerStream.SendMsg(m)
 }
 
 func _PimServer_Register_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -1882,10 +2080,6 @@ var _PimServer_serviceDesc = grpc.ServiceDesc{
 	HandlerType: (*PimServerServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "UpdateEvent",
-			Handler:    _PimServer_UpdateEvent_Handler,
-		},
-		{
 			MethodName: "Register",
 			Handler:    _PimServer_Register_Handler,
 		},
@@ -1910,6 +2104,12 @@ var _PimServer_serviceDesc = grpc.ServiceDesc{
 			Handler:    _PimServer_SendMessage_Handler,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "UpdateEvent",
+			Handler:       _PimServer_UpdateEvent_Handler,
+			ServerStreams: true,
+		},
+	},
 	Metadata: "api/pim.proto",
 }
