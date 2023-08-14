@@ -1,0 +1,146 @@
+syntax = "proto3";
+import "google/protobuf/any.proto";
+package api;
+
+option go_package = "api/";
+
+
+service PimServer {
+  //  通知事件模块
+  rpc UpdateEvent (TokenReq) returns (UpdateEventDataType);
+  //  鉴权模块
+  rpc Register(RegisterReq) returns (BaseOk) ;
+  rpc Login(LoginReq) returns (LoginResp) ;
+  //   用户模块
+  rpc GetMyUserInfo(StreamReq) returns (UserInfoViewerDataType);
+  rpc GetUserInfoByID(GetUserInfoByIDReq) returns (UserInfoViewerDataType);
+  rpc AddUserToContact(AddUserToContactReq) returns (BaseOk);
+//
+
+}
+
+// 登录的Token
+message TokenReq {
+  string Token = 1 ;
+}
+
+// 流请求 只有一个流信息
+// 流是再 UpdateEvent 链接成功后向客户端推送的 一个唯一标识这个数据流的id
+// 使用流可以找到上下文
+// 风险就是 别人拿到流id 之后就能伪造用户信息 , 类似jwt token 一样, 目前不处理这方面的安全问题
+
+message StreamReq {
+  int64 StreamID = 1; // 使用int64 检索 可以比字符快且数据包更小
+}
+
+
+// 推送的事件信息
+message UpdateEventDataType {
+  //   数据包类型 类似 mod type  , sub type 用于定位类型的解析
+  //  这些都是通知的事件
+  enum Type {
+    Unknown = 0;
+    ConnectSuccess = 1 ;
+    ConnectFail = 2 ;
+    NewMessage = 3 ;
+    KickDevice = 4 ;
+    UpdateUserInfo = 5 ;
+    NewChatInfo = 6 ;
+  }
+
+  // 这个body 需要通过不同的类型进行处理
+  google.protobuf.Any body = 2 ;
+}
+
+
+message ConnectSuccessDataType {
+  int64 StreamID = 1;
+}
+
+message RegisterReq {
+  string Username = 1 ;
+  string Password = 2 ;
+  string Email = 3 ;
+}
+
+// 空数据 一样代表成功
+message BaseOk {
+  int64  Code = 1 ; // 可以为空 特殊接口可以使用code 设置处理方法
+}
+
+message LoginReq {
+  enum LoginType {
+    Unknown = 0 ;
+    LoginByUsername = 1;
+    EmailCode = 2 ;
+    MobileCode = 3 ;
+  }
+
+  enum PlatformType {
+    UnknownPlatform = 0 ;
+    Android = 1 ;
+    IOS = 2;
+    Windows = 3 ;
+    Darwin = 4 ;
+    Grpc = 5 ;
+    Web = 6 ;
+  }
+
+
+  LoginReq Type = 1;
+  PlatformType  Platform = 2;
+  string Username = 3 ;
+  string Password = 4 ;
+  string Code = 5 ;
+  //  string VerityCode = 6 ; //验证码暂时不用
+
+
+}
+
+message LoginResp {
+  string Token = 1 ;
+}
+//	UserID     int64  `json:"user_id" gorm:"type:bigint;primarykey;comment:基础id"`
+//	CreatedAt  int64  `json:"created_at" gorm:"autoCreateTime:milli"`
+//	Username   string `json:"username"`
+//	Nick       string `json:"nick"`
+//	Email      string `json:"email" gorm:"unique"`
+//	UserStatus int    `json:"user_status"`
+//	UserType   int    `json:"user_type"`
+//	Avatar     []byte `json:"avatar"`
+
+enum UserStatusEnumType {
+  UserStatusEnumTypeUnknown = 0 ;
+}
+
+enum UserTypeEnumType {
+  UserTypeEnumTypeUnknown = 0 ;
+}
+
+message UserInfoViewerDataType {
+  int64 UserID = 1 ;
+  int64 CreatedAt = 2 ;
+  string Username = 3 ;
+  string Nick = 4 ;
+  string Email = 5 ;
+  UserStatusEnumType UserStatus = 6 ;
+  UserTypeEnumType UserType = 7;
+  bytes Avatar = 8;
+}
+
+
+message GetUserInfoByIDReq {
+  int64 StreamID = 1; // 这是必须的
+  int64 UserID = 2 ;
+}
+
+message AddUserToContactReq {
+  int64 StreamID = 1; // 这是必须的
+
+  int64 UserID = 2 ;
+  string Mobile = 3 ;
+  string Note = 4 ;
+
+  //  Mobile string `json:"mobile"`
+  //  Note   string `json:"note"`
+}
