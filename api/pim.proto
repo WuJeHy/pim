@@ -15,7 +15,8 @@ service PimServer {
   rpc GetMyUserInfo(StreamReq) returns (UserInfoViewerDataType);
   rpc GetUserInfoByID(GetUserInfoByIDReq) returns (UserInfoViewerDataType);
   rpc AddUserToContact(AddUserToContactReq) returns (BaseOk);
-//
+  // 消息模块
+  rpc SendMessage(SendMessageReq) returns (SendMessageResp);
 
 }
 
@@ -55,6 +56,18 @@ message UpdateEventDataType {
 
 message ConnectSuccessDataType {
   int64 StreamID = 1;
+}
+
+message ConnectFailDataType {
+
+}
+
+message KickDeviceDataType {
+
+}
+
+message UpdateUserInfoDataType {
+  UserInfoViewerDataType UserInfo = 1 ;
 }
 
 message RegisterReq {
@@ -143,4 +156,49 @@ message AddUserToContactReq {
 
   //  Mobile string `json:"mobile"`
   //  Note   string `json:"note"`
+}
+
+//	// chat 规则
+//	// 0x01020304 1234  全局用户id
+//	// 0x01020304 0000  公网用户id
+//	// 0x00000000 1234  子网用户id
+//	// -0x0112345678 0000 公网普通群
+//	// -0x0100000000 1234 私网普通群
+//	// -0x1012345678 0000 公网超级群
+//	// -0x1000000000 1234 私网超级群
+//	ChatID           int64             `json:"chat_id"` // 普通用户正数 ， 群负数 超级群 -100开头
+//	MsgType          int               `json:"msg_type"`
+//	Attach           []byte            `json:"attach"`
+//	Body             []byte            `json:"body"`
+//	AtUser           []int64           `json:"at_user"`
+//	ReplyToMessageID int64             `json:"reply_to_message_id"`
+//	ReplyInChatID    int64             `json:"reply_in_chat_id"`
+//	Params           map[string]string `json:"params"`
+message SendMessageReq {
+  int64 StreamID = 1; // 这是必须的
+  int64  ChatID = 2;
+  enum MsgType {
+    Unknown = 0 ; // proto3 必须从0开始
+    Text = 1 ;
+    Image = 2 ;
+  }
+
+  int64 ReplyToMessageID = 3 ;
+  int64 ReplyInChatID = 4 ;
+  string MessageText = 5 ;// 这是文本消息 每个消息都会有文本的部分
+
+  //   Attach 被拆分成不同不同的子类型
+  optional MessageTypeImage ImageContent = 6 ; // 可选类型 当消息类型是图片的时候会有图片信息
+  map<string, string > Params = 7 ;
+}
+
+message MessageTypeImage {
+  //  int64 RemoteFileID = 1 ; // 远程的id
+  bytes ImageBuffer = 1 ; // 先只有buffer
+}
+
+
+
+message SendMessageResp {
+
 }
