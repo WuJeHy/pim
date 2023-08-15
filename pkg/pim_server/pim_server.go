@@ -17,6 +17,9 @@ import (
 type RpcClient struct {
 	//	一个链接的客户端
 	UserID   int64
+	Pf       int
+	StreamID int64
+	Level    int
 	PushFunc func(event *api.UpdateEventDataType)
 }
 
@@ -33,14 +36,29 @@ func (p *PimServer) UpdateEvent(req *api.TokenReq, eventServer api.PimServer_Upd
 	//panic("implement me")
 
 	// todo Token 校验
+	// token 解析
+
+	// 这里的token 是jwt 的形式处理的
 
 	streamID := int64(uuid.New().ID())
 
 	logger := p.svr.logger.Named(fmt.Sprintf("%d", streamID))
+	tokenInfo, errToken := tools.ParseToken(req.Token)
+	if errToken != nil {
+
+		logger.Debug("token 解析错误", zap.Error(errToken))
+
+		err := errors.New("token 校验失败")
+		return err
+	}
 
 	eventChannel := make(chan *api.UpdateEventDataType)
 	lock := new(sync.Mutex)
 	client := &RpcClient{
+		StreamID: streamID,
+		Pf:       int(tokenInfo.Pf),
+		UserID:   tokenInfo.UserID,
+		Level:    tokenInfo.Level,
 		PushFunc: func(event *api.UpdateEventDataType) {
 			lock.Lock()
 			defer lock.Unlock()
@@ -146,8 +164,9 @@ func (p *PimServer) Login(ctx context.Context, req *api.LoginReq) (resp *api.Log
 			req.Username, req.Username, req.Username, req.Password).
 		Find(&userinfo).Error
 
-	if errFind != nil {
+	if errFind != nil || userinfo.UserID == 0 {
 		logger.Error("查询账户失败", zap.Error(errFind))
+		err = errors.New("登录失败")
 		return
 	}
 

@@ -169,7 +169,7 @@ func RunApp(config *ImServerConfig) {
 	svr.dao = dao.NewDao(svr.logger, svr.db, svr.redisPool, svr.closeServer)
 
 	// grpc
-	SetRpcService(config.HttpPort)(svr)
+	SetRpcService(config.RpcPort)(svr)
 	// 计数器
 	promePkg.InitConter()
 
