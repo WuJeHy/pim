@@ -88,6 +88,8 @@ func (p *PimServer) UpdateEvent(req *api.TokenReq, eventServer api.PimServer_Upd
 	p.clients[streamID] = client
 	p.rw.Unlock()
 
+	logger.Info("新用户接入", zap.Int64("UID", client.UserID))
+
 	defer func() {
 		p.rw.Lock()
 		delete(p.clients, streamID)
