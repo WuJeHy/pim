@@ -9,16 +9,35 @@ service PimServer {
   //  通知事件模块
   rpc UpdateEvent (TokenReq) returns (stream UpdateEventDataType);
   //  鉴权模块
+  //  注册用户
   rpc Register(RegisterReq) returns (BaseOk) ;
+  //  登录换取token
   rpc Login(LoginReq) returns (LoginResp) ;
   //   用户模块
+  //  获取我的用户信息
   rpc GetMyUserInfo(StreamReq) returns (UserInfoViewerDataType);
+  //  通过id 获取用户信息
   rpc GetUserInfoByID(GetUserInfoByIDReq) returns (UserInfoViewerDataType);
+  //  添加用户到通讯录
   rpc AddUserToContact(AddUserToContactReq) returns (BaseOk);
   // 消息模块
   rpc SendMessage(SendMessageReq) returns (SendMessageResp);
 
+
+  //   创建群
+  rpc CreateGroup(CreateGroupReq) returns (CreateGroupResp);
+  // 通过群id 入群
+  rpc GroupJoinByID(GroupJoinByIDReq) returns (BaseOk);
+
+  //  邀请新成员
+  rpc GroupInviteMembers(GroupInviteMembersReq) returns (BaseOk);
+
+  // 修改群通知
+  rpc GroupEditNotification(GroupEditNotificationReq) returns(BaseOk);
+
+
 }
+
 
 // 登录的Token
 message TokenReq {
@@ -47,6 +66,9 @@ message UpdateEventDataType {
     KickDevice = 4 ;
     UpdateUserInfo = 5 ;
     NewChatInfo = 6 ;
+    UpdateGroupNewMember = 7 ; // 新成员加入事件
+    UpdateGroupNotification = 8; // 群通知变更事件
+
   }
 
   Type type = 1 ;
@@ -54,7 +76,13 @@ message UpdateEventDataType {
   google.protobuf.Any body = 2 ;
 }
 
+// 参考群通知事件类型
+message UpdateGroupNotificationDataType {
+  int64 FromID = 1 ; // 修改者的id
+  string Notification = 2 ;
+  int64 UpdatedAt = 3;
 
+}
 message ConnectSuccessDataType {
   int64 StreamID = 1;
 }
@@ -201,5 +229,37 @@ message MessageTypeImage {
 
 
 message SendMessageResp {
+
+}
+
+
+message CreateGroupReq {
+  int64 StreamID = 1; // 这是必须的
+  string Name = 2 ;
+  repeated int64 Members = 3 ;
+}
+
+message CreateGroupResp {
+  int64 GroupID = 1 ;
+}
+
+message GroupJoinByIDReq {
+  int64 StreamID = 1; // 这是必须的
+  int64 GroupID = 2 ;
+
+}
+
+
+message GroupInviteMembersReq {
+  int64 StreamID = 1; // 这是必须的
+  int64 GroupID = 2 ;
+  repeated int64 Members = 3 ;
+
+}
+
+message GroupEditNotificationReq {
+  int64 StreamID = 1; // 这是必须的
+  int64 GroupID = 2 ;
+  string Notification = 3 ;
 
 }
