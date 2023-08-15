@@ -100,7 +100,7 @@ message LoginReq {
   }
 
 
-  LoginReq Type = 1;
+  LoginType Type = 1;
   PlatformType  Platform = 2;
   string Username = 3 ;
   string Password = 4 ;
