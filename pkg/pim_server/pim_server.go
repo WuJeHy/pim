@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/types/known/anypb"
 	"gorm.io/gorm/clause"
 	"pim/api"
 	"pim/pkg/models"
@@ -31,6 +32,23 @@ type PimServer struct {
 	// 用户映射还没加
 }
 
+// 初始化业务
+func (c *RpcClient) initClient() {
+	// 推送流
+	pushConnectSuccessEvent := &api.ConnectSuccessDataType{
+		StreamID: c.StreamID,
+	}
+	body, _ := anypb.New(pushConnectSuccessEvent)
+
+	pushData := &api.UpdateEventDataType{
+		Type: api.UpdateEventDataType_ConnectSuccess,
+		Body: body,
+	}
+
+	c.PushFunc(pushData)
+
+}
+
 func (p *PimServer) UpdateEvent(req *api.TokenReq, eventServer api.PimServer_UpdateEventServer) error {
 	//TODO implement me
 	//panic("implement me")
@@ -52,7 +70,7 @@ func (p *PimServer) UpdateEvent(req *api.TokenReq, eventServer api.PimServer_Upd
 		return err
 	}
 
-	eventChannel := make(chan *api.UpdateEventDataType)
+	eventChannel := make(chan *api.UpdateEventDataType, 8)
 	lock := new(sync.Mutex)
 	client := &RpcClient{
 		StreamID: streamID,
@@ -77,6 +95,9 @@ func (p *PimServer) UpdateEvent(req *api.TokenReq, eventServer api.PimServer_Upd
 	}()
 
 	// 推送
+
+	// 推送登录成功数据
+	client.initClient()
 
 	for true {
 		select {

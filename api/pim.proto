@@ -49,6 +49,7 @@ message UpdateEventDataType {
     NewChatInfo = 6 ;
   }
 
+  Type type = 1 ;
   // 这个body 需要通过不同的类型进行处理
   google.protobuf.Any body = 2 ;
 }
