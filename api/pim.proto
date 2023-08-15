@@ -28,13 +28,10 @@ service PimServer {
   rpc CreateGroup(CreateGroupReq) returns (CreateGroupResp);
   // 通过群id 入群
   rpc GroupJoinByID(GroupJoinByIDReq) returns (BaseOk);
-
   //  邀请新成员
   rpc GroupInviteMembers(GroupInviteMembersReq) returns (BaseOk);
-
   // 修改群通知
   rpc GroupEditNotification(GroupEditNotificationReq) returns(BaseOk);
-
   //  移除群成员
   rpc GroupRemoveMembers(GroupRemoveMembersReq) returns (BaseOk);
 
