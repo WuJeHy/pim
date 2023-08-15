@@ -28,3 +28,8 @@ func (p *PimServer) GroupEditNotification(ctx context.Context, req *api.GroupEdi
 
 	return
 }
+
+func (p *PimServer) GroupRemoveMembers(ctx context.Context, req *api.GroupRemoveMembersReq) (resp *api.BaseOk, err error) {
+	//TODO implement me
+	return
+}
