@@ -71,15 +71,15 @@ func (p *PimServer) UpdateEvent(req *api.TokenReq, eventServer api.PimServer_Upd
 	}
 
 	eventChannel := make(chan *api.UpdateEventDataType, 8)
-	lock := new(sync.Mutex)
+	//lock := new(sync.Mutex)
 	client := &RpcClient{
 		StreamID: streamID,
 		Pf:       int(tokenInfo.Pf),
 		UserID:   tokenInfo.UserID,
 		Level:    tokenInfo.Level,
 		PushFunc: func(event *api.UpdateEventDataType) {
-			lock.Lock()
-			defer lock.Unlock()
+			//lock.Lock()
+			//defer lock.Unlock()
 			eventChannel <- event
 		},
 	}
