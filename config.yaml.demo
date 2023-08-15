@@ -1,9 +1,0 @@
-pim:
-  db_uri: "root:12345678@tcp(127.0.0.1:10306)/pim?parseTime=True"
-  logger_level: "debug"
-  logger_path: "./logs"
-  rpc_port: 18404
-  redis_ip: 127.0.0.1:6379
-  redis_db: 8
-  redis_password: ""
-  workspace: "asset"

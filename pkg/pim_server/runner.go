@@ -70,6 +70,7 @@ func (s *server) Run() error {
 	// kill -2 is syscall.SIGINT
 	// kill -9 is syscall. SIGKILL but can"t be catch, so don't need add it
 
+	// 开启端口
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", s.rpc_port))
 	if err != nil {
 		fmt.Printf("开启服务失败: %s", err)
@@ -133,6 +134,8 @@ func SetMysqlDBByConfig(dbUri string) Option {
 
 	}
 }
+
+// RunApp 启动服务
 func RunApp(config *ImServerConfig) {
 	//	初始化日志系统
 	configLevel, err := zapcore.ParseLevel(config.LoggerLevel)
@@ -162,7 +165,7 @@ func RunApp(config *ImServerConfig) {
 	// redis池
 	SetRedis(config.RedisIP, config.RedisPassword, config.RedisDB)(svr)
 
-	//	 设置数据库
+	// 设置数据库
 	SetMysqlDBByConfig(config.DBUri)(svr)
 
 	// dao
@@ -177,6 +180,7 @@ func RunApp(config *ImServerConfig) {
 
 }
 
+// SetRpcService 注册pim服务
 func SetRpcService(port int) Option {
 	return func(svr *server) {
 		svr.rpc_port = port
@@ -188,6 +192,7 @@ func SetRpcService(port int) Option {
 
 		svr.grpcd = grpc.NewServer()
 
+		// 参数分别是grpc服务与自己的服务
 		api.RegisterPimServerServer(svr.grpcd, svr.pim)
 	}
 }
