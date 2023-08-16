@@ -24,6 +24,39 @@ type RpcClient struct {
 	PushFunc func(event *api.UpdateEventDataType)
 }
 
+// GetUserID 实现token 的接口
+func (c *RpcClient) GetUserID() int64 {
+	return c.UserID
+}
+
+func (c *RpcClient) GetPf() int {
+	return c.Pf
+}
+
+func (c *RpcClient) GetLevel() int {
+	return c.Level
+}
+
+type StreamInfoReq interface {
+	GetStreamID() int64
+}
+
+// CheckAuthByStream 通过流id 鉴权
+func (p *PimServer) CheckAuthByStream(req StreamInfoReq) (token TokenInfo, err error) {
+	p.rw.RLock()
+	defer p.rw.RUnlock()
+
+	client, isok := p.clients[req.GetStreamID()]
+	if !isok {
+		err = errors.New("没有权限")
+		return
+	}
+
+	token = client
+
+	return
+}
+
 type PimServer struct {
 	svr *server
 	// 这个map 是调用接口的时候快速查询用的
@@ -204,12 +237,12 @@ func (p *PimServer) Login(ctx context.Context, req *api.LoginReq) (resp *api.Log
 func (p *PimServer) GetMyUserInfo(ctx context.Context, req *api.StreamReq) (resp *api.UserInfoViewerDataType, err error) {
 	// 从流中提取基本信息
 
-	client, isok := p.GetClientByStream(req.StreamID)
-	if !isok {
-		err = errors.New("鉴权错误")
+	tokenInfo, err := p.CheckAuthByStream(req)
+	if err != nil {
 		return
 	}
-
+	// 用户信息的使用
+	_ = tokenInfo
 	// 查询我的信息
 
 	logger := p.svr.logger
@@ -218,7 +251,7 @@ func (p *PimServer) GetMyUserInfo(ctx context.Context, req *api.StreamReq) (resp
 	var userinfo models.UserInfoViewer
 
 	err = db.Model(&userinfo).Where(&models.UserInfoViewer{
-		UserID: client.UserID,
+		UserID: tokenInfo.GetUserID(),
 	}).Find(&userinfo).Error
 
 	if err != nil || userinfo.UserID == 0 {
@@ -244,13 +277,12 @@ func (p *PimServer) GetMyUserInfo(ctx context.Context, req *api.StreamReq) (resp
 func (p *PimServer) GetUserInfoByID(ctx context.Context, req *api.GetUserInfoByIDReq) (resp *api.UserInfoViewerDataType, err error) {
 	//TODO implement me
 	//panic("implement me")
-	client, isok := p.GetClientByStream(req.StreamID)
-	if !isok {
-		err = errors.New("鉴权错误")
+	tokenInfo, err := p.CheckAuthByStream(req)
+	if err != nil {
 		return
 	}
-
-	_ = client
+	// 用户信息的使用
+	_ = tokenInfo
 	// 查询目标用户的
 
 	logger := p.svr.logger
@@ -287,15 +319,16 @@ func (p *PimServer) AddUserToContact(ctx context.Context, req *api.AddUserToCont
 	//panic("implement me")
 	resp = new(api.BaseOk)
 
-	c, isok := p.GetClientByStream(req.StreamID)
-	if !isok {
-		err = errors.New("鉴权错误")
+	tokenInfo, err := p.CheckAuthByStream(req)
+	if err != nil {
 		return
 	}
+	// 用户信息的使用
+	_ = tokenInfo
 
 	// 数据加入数据库
 
-	req.UserID = c.UserID
+	req.UserID = tokenInfo.GetUserID()
 	//
 
 	db := p.svr.db
@@ -307,7 +340,7 @@ func (p *PimServer) AddUserToContact(ctx context.Context, req *api.AddUserToCont
 	//findUser.UserID = cUserID
 
 	respDB := db.Model(&findUser).Where(&models.UserInfoViewer{
-		UserID: c.UserID,
+		UserID: tokenInfo.GetUserID(),
 	}).Find(&findUser)
 
 	if respDB.Error != nil {
