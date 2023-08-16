@@ -65,9 +65,13 @@ func (p *PimServer) CreateGroup(ctx context.Context, req *api.CreateGroupReq) (r
 		db.Create(groupMemberList)
 
 	}
-	resp = new(api.CreateGroupResp)
 	// TODO 向群成员推送新聊天事件
+
+	//for _, m := range req.Members {
+	//	p.UserStreamClientMap.PushUserEvent(m, )
+	//}
 	// TODO 向群成员推送"欢迎加入"事件
+	resp = new(api.CreateGroupResp)
 	return
 }
 

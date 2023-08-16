@@ -104,9 +104,6 @@ message UpdateUserInfoDataType {
   UserInfoViewerDataType UserInfo = 1 ;
 }
 
-message GroupNotificationDataType{
-  string Notification = 1;
-}
 
 message RegisterReq {
   string Username = 1 ;

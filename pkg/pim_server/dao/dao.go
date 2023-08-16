@@ -16,8 +16,8 @@ import (
 )
 
 type CacheValue struct {
-	UpdateAt int64
-	Value    interface{}
+	UpdateAt int64       // UpdateAt 最后一次取的时间
+	Value    interface{} // Value 存实际的对象指针
 }
 
 func (c *CacheValue) UpdateTime() {
@@ -221,6 +221,24 @@ func (d *Dao) DoClearKey(timeNow time.Time) {
 
 }
 
+func (d *Dao) GetGroupMembersByGroupID(groupID int64) (members []*models.GroupMember, err error) {
+	db := d.db
+	members = make([]*models.GroupMember, 0)
+	err = db.Model(&models.GroupMember{}).Where(&models.GroupMember{
+		GroupID: groupID,
+	}).Find(&members).Error
+	return
+}
+
+func (d *Dao) GetGroupBaseInfoByGroupID(groupID int64) (baseInfo *models.GroupBaseInfo, err error) {
+	db := d.db
+	baseInfo = new(models.GroupBaseInfo)
+	err = db.Model(&models.GroupBaseInfo{}).Where(&models.GroupBaseInfo{
+		GroupID: groupID,
+	}).Take(baseInfo).Error
+	return
+}
+
 func NewDao(logger *zap.Logger, db *gorm.DB, redisPool *redis.Pool, closeState <-chan struct{}) APIDao {
 	return &Dao{
 		closeServer:    closeState,
@@ -245,7 +263,15 @@ type UserDao interface {
 	GetChatInfoByID(myUserID int64, chatID int64) (info *api.ChatInfoDataType, err error)
 }
 
+type GroupDao interface {
+	// GetGroupMembersByGroupID 通过群ID获取所有群成员
+	GetGroupMembersByGroupID(groupID int64) (members []*models.GroupMember, err error)
+	// GetGroupBaseInfoByGroupID 通过群ID获取群信息
+	GetGroupBaseInfoByGroupID(groupID int64) (baseInfo *models.GroupBaseInfo, err error)
+}
+
 type APIDao interface {
 	UserDao
+	//GroupDao
 	SystemControlDao
 }
