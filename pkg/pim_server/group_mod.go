@@ -10,6 +10,12 @@ import (
 // CreateGroup 创建群聊
 func (p *PimServer) CreateGroup(ctx context.Context, req *api.CreateGroupReq) (resp *api.CreateGroupResp, err error) {
 	// TODO 鉴权
+	tokenInfo, err := p.CheckAuthByStream(req)
+	if err != nil {
+		return
+	}
+	// 用户信息的使用
+	_ = tokenInfo
 	// 鉴权失败，return
 	// 鉴权成功
 	db := p.svr.db
@@ -68,6 +74,12 @@ func (p *PimServer) CreateGroup(ctx context.Context, req *api.CreateGroupReq) (r
 // GroupJoinByID 通过群ID加入群聊
 func (p *PimServer) GroupJoinByID(ctx context.Context, req *api.GroupJoinByIDReq) (resp *api.BaseOk, err error) {
 	// TODO 鉴权
+	tokenInfo, err := p.CheckAuthByStream(req)
+	if err != nil {
+		return
+	}
+	// 用户信息的使用
+	_ = tokenInfo
 	// 鉴权未通过，return
 	// 鉴权成功
 	db := p.svr.db

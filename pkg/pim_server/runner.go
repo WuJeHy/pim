@@ -23,17 +23,20 @@ import (
 )
 
 type server struct {
-	logger      *zap.Logger
-	redisPool   *redis.Pool
-	db          *gorm.DB
-	closeServer chan struct{}
-	config      *ImServerConfig
-	mu          sync.RWMutex
-	dao         dao.APIDao
-	dbLogger    *DBLogger
-	grpcd       *grpc.Server
-	pim         *PimServer
-	rpc_port    int
+	logger          *zap.Logger
+	redisPool       *redis.Pool
+	db              *gorm.DB
+	closeServer     chan struct{}
+	config          *ImServerConfig
+	mu              sync.RWMutex
+	dao             dao.APIDao
+	dbLogger        *DBLogger
+	grpcd           *grpc.Server
+	pim             *PimServer
+	rpc_port        int
+	msgNode         *tools.Node
+	sendMessageChan chan *api.Message
+	saveMessageChan chan *models.SingleMessage
 }
 
 type DBLogger struct {
@@ -76,6 +79,10 @@ func (s *server) Run() error {
 		fmt.Printf("开启服务失败: %s", err)
 		return nil
 	}
+
+	go s.StartSenderMessageEventService()
+	go s.StartSaveMessageEventService()
+
 	go func() {
 		// service connections
 		err = s.grpcd.Serve(lis)
@@ -162,6 +169,8 @@ func RunApp(config *ImServerConfig) {
 		logger: svr.logger,
 	}
 
+	SetNodeID()(svr)
+	SetMessageChan()(svr)
 	// redis池
 	SetRedis(config.RedisIP, config.RedisPassword, config.RedisDB)(svr)
 
@@ -173,6 +182,7 @@ func RunApp(config *ImServerConfig) {
 
 	// grpc
 	SetRpcService(config.RpcPort)(svr)
+
 	// 计数器
 	promePkg.InitConter()
 
@@ -180,18 +190,27 @@ func RunApp(config *ImServerConfig) {
 
 }
 
+func SetMessageChan() Option {
+	return func(svr *server) {
+		svr.sendMessageChan = make(chan *api.Message, 16)
+		svr.saveMessageChan = make(chan *models.SingleMessage, 16)
+	}
+}
+
 // SetRpcService 注册pim服务
 func SetRpcService(port int) Option {
 	return func(svr *server) {
 		svr.rpc_port = port
 		svr.pim = &PimServer{
-			svr:     svr,
-			rw:      new(sync.RWMutex),
-			clients: make(map[int64]*RpcClient, 128),
+			svr:                 svr,
+			rw:                  new(sync.RWMutex),
+			clients:             make(map[int64]*RpcClient, 128),
+			UserStreamClientMap: make(UserStreamClientMapType, 8),
 			groups:  make(map[int64][]int64, 128),
 		}
 
 		svr.grpcd = grpc.NewServer()
+
 		// 参数分别是grpc服务与自己的服务
 		api.RegisterPimServerServer(svr.grpcd, svr.pim)
 	}

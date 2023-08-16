@@ -36,8 +36,6 @@ service PimServer {
   rpc GroupRemoveMembers(GroupRemoveMembersReq) returns (BaseOk);
 
 
-
-
 }
 
 
@@ -208,19 +206,17 @@ message AddUserToContactReq {
 message SendMessageReq {
   int64 StreamID = 1; // 这是必须的
   int64  ChatID = 2;
-  enum MsgType {
-    Unknown = 0 ; // proto3 必须从0开始
-    Text = 1 ;
-    Image = 2 ;
-  }
+
 
   int64 ReplyToMessageID = 3 ;
   int64 ReplyInChatID = 4 ;
   string MessageText = 5 ;// 这是文本消息 每个消息都会有文本的部分
 
-  //   Attach 被拆分成不同不同的子类型
+  // Attach 被拆分成不同不同的子类型
   optional MessageTypeImage ImageContent = 6 ; // 可选类型 当消息类型是图片的时候会有图片信息
   map<string, string > Params = 7 ;
+  MessageTypeEnum Type = 8 ;
+  repeated int64 AtUser = 9 ;
 }
 
 message MessageTypeImage {
@@ -228,10 +224,44 @@ message MessageTypeImage {
   bytes ImageBuffer = 1 ; // 先只有buffer
 }
 
+enum MessageTypeEnum {
+  MessageTypeUnknown = 0 ; // proto3 必须从0开始
+  MessageTypeText = 1 ;
+  MessageTypeEnumImage = 2 ;
+}
+//	SenderMsgStateSend    = 1
+//	SenderMsgStateAck     = 2
+//	SenderMsgStateSuccess = 3
+//	SenderMsgStateFail    = 4
+enum MessageStatusEnum {
+  MessageStatusUnknown = 0 ;
+  MessageStatusSend = 1 ;
+  MessageStatusAck = 2 ;
+  MessageStatusSuccess = 3 ;
+  MessageStatusFail = 4 ;
+}
+// 消息数据类型
+message Message {
+  int64 ID = 1 ;
+  int64 ChatID = 2;
+  int64 ReplyToMessageID = 3 ;
+  int64 ReplyInChatID = 4 ;
+  string MessageText = 5 ;// 这是文本消息 每个消息都会有文本的部分
+  // Attach 被拆分成不同不同的子类型
+  optional MessageTypeImage ImageContent = 6 ; // 可选类型 当消息类型是图片的时候会有图片信息
+  map<string, string > Params = 7 ;
+  MessageTypeEnum Type = 8 ;
+  repeated int64 AtUser = 9 ;
+  int64 CreatedAt = 10;
+  int64 UpdatedAt = 11;
+  int64 Sender = 12;
+  MessageStatusEnum Status = 13 ;
+}
+
 
 
 message SendMessageResp {
-
+  int64 ID = 1;
 }
 
 

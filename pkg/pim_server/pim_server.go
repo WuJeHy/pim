@@ -2,6 +2,7 @@ package pim_server
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/google/uuid"
@@ -24,14 +25,88 @@ type RpcClient struct {
 	PushFunc func(event *api.UpdateEventDataType)
 }
 
+// GetUserID 实现token 的接口
+func (c *RpcClient) GetUserID() int64 {
+	return c.UserID
+}
+
+func (c *RpcClient) GetPf() int {
+	return c.Pf
+}
+
+func (c *RpcClient) GetLevel() int {
+	return c.Level
+}
+
+type StreamInfoReq interface {
+	GetStreamID() int64
+}
+
+// CheckAuthByStream 通过流id 鉴权
+func (p *PimServer) CheckAuthByStream(req StreamInfoReq) (token TokenInfo, err error) {
+	p.rw.RLock()
+	defer p.rw.RUnlock()
+
+	client, isok := p.clients[req.GetStreamID()]
+	if !isok {
+		err = errors.New("没有权限")
+		return
+	}
+
+	token = client
+
+	return
+}
+
+// StreamClientType 类型别名
+type StreamClientType map[int64]*RpcClient
+
+// PushUserEvent 封装直接向某个用户推送
+func (s StreamClientType) PushUserEvent(event *api.UpdateEventDataType) {
+	for _, client := range s {
+		client.PushFunc(event)
+	}
+}
+
+// PushUserEventByPf 封装直接向某个用户的某个平台推送
+func (s StreamClientType) PushUserEventByPf(pf int, event *api.UpdateEventDataType) {
+	for _, client := range s {
+		if client.Pf == pf {
+			client.PushFunc(event)
+		}
+	}
+}
+
+type UserStreamClientMapType map[int64]StreamClientType
+
+// PushUserEvent 直接推送给指定的用户
+func (u UserStreamClientMapType) PushUserEvent(userID int64, event *api.UpdateEventDataType) {
+
+	streamClient, isok := u[userID]
+	if isok {
+		streamClient.PushUserEvent(event)
+	}
+
+}
+func (p *PimServer) GenMsgID() tools.ID {
+	return p.svr.msgNode.Generate()
+}
+
 type PimServer struct {
 	svr *server
 	// 这个map 是调用接口的时候快速查询用的
+	// 使用 流id 查询基本信息
 	clients map[int64]*RpcClient
 	rw      *sync.RWMutex
-	// 用户映射还没加
-	// 群映射 groupID -> userID
+	// 使用 用户id 查找流信息
+	UserStreamClientMap UserStreamClientMapType
 	groups map[int64][]int64
+}
+
+func SetNodeID() Option {
+	return func(svr *server) {
+		svr.msgNode, _ = tools.NewNode(int64(1))
+	}
 }
 
 // 初始化业务
@@ -86,17 +161,14 @@ func (p *PimServer) UpdateEvent(req *api.TokenReq, eventServer api.PimServer_Upd
 		},
 	}
 
-	p.rw.Lock()
-	p.clients[streamID] = client
-	p.rw.Unlock()
+	// 这里需要添加用户关系
+	//需要绑定 userid -> stream_id 的关系 即可
+
+	p.AddUserStream(client)
 
 	logger.Info("新用户接入", zap.Int64("UID", client.UserID))
 
-	defer func() {
-		p.rw.Lock()
-		delete(p.clients, streamID)
-		p.rw.Unlock()
-	}()
+	defer p.RemoveUserStream(client)
 
 	// 推送
 
@@ -206,12 +278,12 @@ func (p *PimServer) Login(ctx context.Context, req *api.LoginReq) (resp *api.Log
 func (p *PimServer) GetMyUserInfo(ctx context.Context, req *api.StreamReq) (resp *api.UserInfoViewerDataType, err error) {
 	// 从流中提取基本信息
 
-	client, isok := p.GetClientByStream(req.StreamID)
-	if !isok {
-		err = errors.New("鉴权错误")
+	tokenInfo, err := p.CheckAuthByStream(req)
+	if err != nil {
 		return
 	}
-
+	// 用户信息的使用
+	_ = tokenInfo
 	// 查询我的信息
 
 	logger := p.svr.logger
@@ -220,7 +292,7 @@ func (p *PimServer) GetMyUserInfo(ctx context.Context, req *api.StreamReq) (resp
 	var userinfo models.UserInfoViewer
 
 	err = db.Model(&userinfo).Where(&models.UserInfoViewer{
-		UserID: client.UserID,
+		UserID: tokenInfo.GetUserID(),
 	}).Find(&userinfo).Error
 
 	if err != nil || userinfo.UserID == 0 {
@@ -246,13 +318,12 @@ func (p *PimServer) GetMyUserInfo(ctx context.Context, req *api.StreamReq) (resp
 func (p *PimServer) GetUserInfoByID(ctx context.Context, req *api.GetUserInfoByIDReq) (resp *api.UserInfoViewerDataType, err error) {
 	//TODO implement me
 	//panic("implement me")
-	client, isok := p.GetClientByStream(req.StreamID)
-	if !isok {
-		err = errors.New("鉴权错误")
+	tokenInfo, err := p.CheckAuthByStream(req)
+	if err != nil {
 		return
 	}
-
-	_ = client
+	// 用户信息的使用
+	_ = tokenInfo
 	// 查询目标用户的
 
 	logger := p.svr.logger
@@ -289,15 +360,16 @@ func (p *PimServer) AddUserToContact(ctx context.Context, req *api.AddUserToCont
 	//panic("implement me")
 	resp = new(api.BaseOk)
 
-	c, isok := p.GetClientByStream(req.StreamID)
-	if !isok {
-		err = errors.New("鉴权错误")
+	tokenInfo, err := p.CheckAuthByStream(req)
+	if err != nil {
 		return
 	}
+	// 用户信息的使用
+	_ = tokenInfo
 
 	// 数据加入数据库
 
-	req.UserID = c.UserID
+	req.UserID = tokenInfo.GetUserID()
 	//
 
 	db := p.svr.db
@@ -309,7 +381,7 @@ func (p *PimServer) AddUserToContact(ctx context.Context, req *api.AddUserToCont
 	//findUser.UserID = cUserID
 
 	respDB := db.Model(&findUser).Where(&models.UserInfoViewer{
-		UserID: c.UserID,
+		UserID: tokenInfo.GetUserID(),
 	}).Find(&findUser)
 
 	if respDB.Error != nil {
@@ -354,8 +426,79 @@ func (p *PimServer) AddUserToContact(ctx context.Context, req *api.AddUserToCont
 }
 
 func (p *PimServer) SendMessage(ctx context.Context, req *api.SendMessageReq) (resp *api.SendMessageResp, err error) {
-	//TODO implement me
-	panic("implement me")
+	// 发送消息
+
+	tokenInfo, err := p.CheckAuthByStream(req)
+
+	if err != nil {
+		return
+	}
+
+	msgID := p.GenMsgID()
+	//
+	createAt := msgID.Time()
+
+	paramJson, _ := json.Marshal(req.Params)
+	atUserJson, _ := json.Marshal(req.AtUser)
+	newMessageID := msgID.Int64()
+	//// 产生消息
+	saveMsg := &models.SingleMessage{
+		MsgID:            newMessageID,
+		CreatedAt:        createAt,
+		UpdatedAt:        createAt,
+		Sender:           tokenInfo.GetUserID(),
+		ChatID:           req.ChatID,
+		MsgType:          int(req.GetType()),
+		MsgStatus:        int(api.MessageStatusEnum_MessageStatusSend),
+		Text:             req.MessageText,
+		Params:           paramJson,
+		AtUser:           atUserJson,
+		ReplyToMessageID: req.ReplyToMessageID,
+		ReplyInChatID:    req.ReplyInChatID,
+		//Body:             []byte(req.MessageText),
+		//Attach:           req.Attach,
+	}
+
+	sendMsg := &api.Message{
+		ID:               newMessageID,
+		CreatedAt:        createAt,
+		UpdatedAt:        createAt,
+		Sender:           tokenInfo.GetUserID(),
+		ChatID:           req.ChatID,
+		Type:             req.GetType(),
+		MessageText:      req.GetMessageText(),
+		ReplyToMessageID: req.GetReplyToMessageID(),
+		ReplyInChatID:    req.GetReplyInChatID(),
+		AtUser:           req.GetAtUser(),
+		Status:           api.MessageStatusEnum_MessageStatusSend,
+	}
+
+	// 推送给我和对方
+
+	p.svr.saveMessageChan <- saveMsg
+	p.svr.sendMessageChan <- sendMsg
+
+	//sendMsg := &models.SingleMessageDataType{
+	//	MsgID:            newMessageID,
+	//	CreatedAt:        createAt,
+	//	UpdatedAt:        createAt,
+	//	Sender:           c.UserID,
+	//	ChatID:           req.ChatID,
+	//	MsgType:          req.MsgType,
+	//	MsgStatus:        models.SenderMsgStateSend,
+	//	Body:             sav,
+	//	Attach:           req.Attach,
+	//	Params:           req.Params,
+	//	AtUser:           req.AtUser,
+	//	ReplyToMessageID: req.ReplyToMessageID,
+	//	ReplyInChatID:    req.ReplyInChatID,
+	//}
+
+	resp = new(api.SendMessageResp)
+
+	resp.ID = newMessageID
+
+	return
 }
 
 func (p *PimServer) GetClientByStream(streamID int64) (client *RpcClient, isok bool) {
@@ -365,4 +508,48 @@ func (p *PimServer) GetClientByStream(streamID int64) (client *RpcClient, isok b
 	p.rw.RUnlock()
 
 	return
+}
+
+func (p *PimServer) AddUserStream(client *RpcClient) {
+	p.rw.Lock()
+	defer p.rw.Unlock()
+	p.clients[client.StreamID] = client
+
+	logger := p.svr.logger
+	// 映射用户关系
+	//查看 用户是否有其他设备
+	streamClients, isok := p.UserStreamClientMap[client.UserID]
+	if isok {
+		streamClients[client.StreamID] = client
+		logger.Info("新设备登录", zap.Int64("StreamID", client.StreamID), zap.Int("用户在线设备数", len(streamClients)))
+	} else {
+		// 第一个登录的设备
+
+		streamClients = make(StreamClientType)
+		streamClients[client.StreamID] = client
+		p.UserStreamClientMap[client.UserID] = streamClients
+		logger.Info("第一个新设备登录", zap.Int64("StreamID", client.StreamID), zap.Int("用户在线设备数", len(streamClients)))
+
+	}
+
+}
+
+func (p *PimServer) RemoveUserStream(client *RpcClient) {
+	p.rw.Lock()
+	defer p.rw.Unlock()
+	//
+	// 删除user
+
+	logger := p.svr.logger
+	streamClients, isok := p.UserStreamClientMap[client.UserID]
+
+	if isok {
+		delete(streamClients, client.StreamID)
+	}
+	delete(p.clients, client.StreamID)
+
+	logger.Info("用户设备离线", zap.Int64("StreamID", client.StreamID), zap.Int("用户在线设备数", len(streamClients)))
+	if len(streamClients) == 0 {
+		delete(p.UserStreamClientMap, client.UserID)
+	}
 }
