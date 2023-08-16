@@ -16,8 +16,8 @@ import (
 )
 
 type CacheValue struct {
-	UpdateAt int64       // UpdateAt 最后一次取的时间
-	Value    interface{} // Value 存实际的对象指针
+	UpdateAt int64
+	Value    interface{}
 }
 
 func (c *CacheValue) UpdateTime() {
@@ -46,6 +46,22 @@ type Dao struct {
 	cacheGlobalMap map[string]*CacheValue
 }
 
+func GetChatInfoCacheValue(d *Dao, key string) (info *api.ChatInfoDataType, err error) {
+	// 同时更新有效期
+	cacheValue, err := d.GetCacheKey(key, true)
+
+	if err != nil {
+		return
+	}
+
+	switch value := cacheValue.(type) {
+	case *api.ChatInfoDataType:
+		return value, nil
+	default:
+		return nil, errors.New("缓存的类型对不上")
+	}
+}
+
 // GetChatInfoByID 获取与某人的聊天记录（这个是指A是否与B聊过天）
 func (d *Dao) GetChatInfoByID(myUserID int64, chatID int64) (info *api.ChatInfoDataType, err error) {
 	//TODO implement me
@@ -65,18 +81,27 @@ func (d *Dao) GetChatInfoByID(myUserID int64, chatID int64) (info *api.ChatInfoD
 	rkey := fmt.Sprintf("%s:%X:%X", codes.RedisUserChatListPrefix, myUserID, chatID)
 
 	// 从redis中获取所有消息
-	replyBytes, err := redis.Values(redisConn.Do("HGETALL", rkey))
-	if err != nil {
-		return
-	}
+	//replyBytes, err := redis.Values(redisConn.Do("HGETALL", rkey))
+	//if err != nil {
+	//	return
+	//}
+	//
+	//// 有数据库 这是一个json
+	//
+	//info = new(api.ChatInfoDataType)
+	//
+	//// 将redis返回的数据包装成一个对象
+	//// 假如replyBytes为空会抛出error
+	//err = redis.ScanStruct(replyBytes, info)
 
-	// 有数据库 这是一个json
+	// 使用本地cache 替代 redis 方法
 
-	info = new(api.ChatInfoDataType)
+	// 方法一: 直接使用
+	//cacheValue , err := d.GetCacheKey(rkey)
 
-	// 将redis返回的数据包装成一个对象
-	// 假如replyBytes为空会抛出error
-	err = redis.ScanStruct(replyBytes, info)
+	info, err = GetChatInfoCacheValue(d, rkey)
+
+	// 方法二: 封装后使用
 
 	//err = json.Unmarshal(replyBytes, resp)
 	if err == nil {
@@ -138,19 +163,22 @@ func (d *Dao) GetChatInfoByID(myUserID int64, chatID int64) (info *api.ChatInfoD
 	info.LastUpdateTime = itemChatInfoItem.LastUpdateTime
 	info.LastMsgId = itemChatInfoItem.LastMsgID
 
-	_, err = redisConn.Do("HMSET", redis.Args{rkey}.AddFlat(info)...)
-	if err != nil {
-		// 保存redis 失败 ??? 处理
-		d.logger.Debug("保存会话到redis 失败")
-	}
-	_, err = redisConn.Do("EXPIRE", rkey, 3600*24*7)
+	// 同样的要重新更新
+
+	d.AddValue(rkey, info)
+	//_, err = redisConn.Do("HMSET", redis.Args{rkey}.AddFlat(info)...)
+	//if err != nil {
+	//	// 保存redis 失败 ??? 处理
+	//	d.logger.Debug("保存会话到redis 失败")
+	//}
+	//_, err = redisConn.Do("EXPIRE", rkey, 3600*24*7)
 
 	//info = itemChatInfoItem
 	err = nil
 	return
 }
 
-func (d *Dao) GetCacheKey(key string) (interface{}, error) {
+func (d *Dao) GetCacheKey(key string, update ...bool) (interface{}, error) {
 	//TODO implement me
 	//panic("implement me")
 	d.rw.RLock()
@@ -159,6 +187,12 @@ func (d *Dao) GetCacheKey(key string) (interface{}, error) {
 	value, isok := d.cacheGlobalMap[key]
 	if isok {
 		if value.Value != nil {
+			// 更新有效期
+			if len(update) > 0 {
+				if update[0] {
+					value.UpdateTime()
+				}
+			}
 			return value.Value, nil
 		} else {
 			// 顺便清理这个key
@@ -221,22 +255,11 @@ func (d *Dao) DoClearKey(timeNow time.Time) {
 
 }
 
-func (d *Dao) GetGroupMembersByGroupID(groupID int64) (members []*models.GroupMember, err error) {
-	db := d.db
-	members = make([]*models.GroupMember, 0)
-	err = db.Model(&models.GroupMember{}).Where(&models.GroupMember{
-		GroupID: groupID,
-	}).Find(&members).Error
-	return
-}
-
-func (d *Dao) GetGroupBaseInfoByGroupID(groupID int64) (baseInfo *models.GroupBaseInfo, err error) {
-	db := d.db
-	baseInfo = new(models.GroupBaseInfo)
-	err = db.Model(&models.GroupBaseInfo{}).Where(&models.GroupBaseInfo{
-		GroupID: groupID,
-	}).Take(baseInfo).Error
-	return
+func (d *Dao) AddValue(key string, value interface{}) {
+	valueWarp := NewValue(value)
+	d.rw.Lock()
+	defer d.rw.Unlock()
+	d.cacheGlobalMap[key] = valueWarp
 }
 
 func NewDao(logger *zap.Logger, db *gorm.DB, redisPool *redis.Pool, closeState <-chan struct{}) APIDao {
@@ -252,7 +275,7 @@ func NewDao(logger *zap.Logger, db *gorm.DB, redisPool *redis.Pool, closeState <
 
 type SystemControlDao interface {
 	AutoClearService()
-	GetCacheKey(key string) (interface{}, error)
+	GetCacheKey(key string, update ...bool) (interface{}, error)
 	DoClearKey(timeNow time.Time)
 }
 
@@ -263,15 +286,7 @@ type UserDao interface {
 	GetChatInfoByID(myUserID int64, chatID int64) (info *api.ChatInfoDataType, err error)
 }
 
-type GroupDao interface {
-	// GetGroupMembersByGroupID 通过群ID获取所有群成员
-	GetGroupMembersByGroupID(groupID int64) (members []*models.GroupMember, err error)
-	// GetGroupBaseInfoByGroupID 通过群ID获取群信息
-	GetGroupBaseInfoByGroupID(groupID int64) (baseInfo *models.GroupBaseInfo, err error)
-}
-
 type APIDao interface {
 	UserDao
-	//GroupDao
 	SystemControlDao
 }
