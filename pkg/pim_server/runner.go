@@ -80,6 +80,10 @@ func (s *server) Run() error {
 		fmt.Printf("开启服务失败: %s", err)
 		return nil
 	}
+
+	go s.StartSenderMessageEventService()
+	go s.StartSaveMessageEventService()
+
 	go func() {
 		// service connections
 		err = s.grpcd.Serve(lis)
