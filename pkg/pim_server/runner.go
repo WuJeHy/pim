@@ -185,9 +185,10 @@ func SetRpcService(port int) Option {
 	return func(svr *server) {
 		svr.rpc_port = port
 		svr.pim = &PimServer{
-			svr:     svr,
-			rw:      new(sync.RWMutex),
-			clients: make(map[int64]*RpcClient, 128),
+			svr:                 svr,
+			rw:                  new(sync.RWMutex),
+			clients:             make(map[int64]*RpcClient, 128),
+			UserStreamClientMap: make(map[int64]StreamClientType, 8),
 		}
 
 		svr.grpcd = grpc.NewServer()

@@ -57,12 +57,16 @@ func (p *PimServer) CheckAuthByStream(req StreamInfoReq) (token TokenInfo, err e
 	return
 }
 
+// StreamClientType 类型别名
+type StreamClientType map[int64]*RpcClient
+
 type PimServer struct {
 	svr *server
 	// 这个map 是调用接口的时候快速查询用的
 	clients map[int64]*RpcClient
 	rw      *sync.RWMutex
-	// 用户映射还没加
+	// TODO 用户映射还没加
+	UserStreamClientMap map[int64]StreamClientType
 }
 
 // 初始化业务
@@ -117,17 +121,14 @@ func (p *PimServer) UpdateEvent(req *api.TokenReq, eventServer api.PimServer_Upd
 		},
 	}
 
-	p.rw.Lock()
-	p.clients[streamID] = client
-	p.rw.Unlock()
+	// 这里需要添加用户关系
+	//需要绑定 userid -> stream_id 的关系 即可
+
+	p.AddUserStream(client)
 
 	logger.Info("新用户接入", zap.Int64("UID", client.UserID))
 
-	defer func() {
-		p.rw.Lock()
-		delete(p.clients, streamID)
-		p.rw.Unlock()
-	}()
+	defer p.RemoveUserStream(client)
 
 	// 推送
 
@@ -396,4 +397,48 @@ func (p *PimServer) GetClientByStream(streamID int64) (client *RpcClient, isok b
 	p.rw.RUnlock()
 
 	return
+}
+
+func (p *PimServer) AddUserStream(client *RpcClient) {
+	p.rw.Lock()
+	defer p.rw.Unlock()
+	p.clients[client.StreamID] = client
+
+	logger := p.svr.logger
+	// 映射用户关系
+	//查看 用户是否有其他设备
+	streamClients, isok := p.UserStreamClientMap[client.UserID]
+	if isok {
+		streamClients[client.StreamID] = client
+		logger.Info("新设备登录", zap.Int64("StreamID", client.StreamID), zap.Int("用户在线设备数", len(streamClients)))
+	} else {
+		// 第一个登录的设备
+
+		streamClients = make(StreamClientType)
+		streamClients[client.StreamID] = client
+		p.UserStreamClientMap[client.UserID] = streamClients
+		logger.Info("第一个新设备登录", zap.Int64("StreamID", client.StreamID), zap.Int("用户在线设备数", len(streamClients)))
+
+	}
+
+}
+
+func (p *PimServer) RemoveUserStream(client *RpcClient) {
+	p.rw.Lock()
+	defer p.rw.Unlock()
+	//
+	// 删除user
+
+	logger := p.svr.logger
+	streamClients, isok := p.UserStreamClientMap[client.UserID]
+
+	if isok {
+		delete(streamClients, client.StreamID)
+	}
+	delete(p.clients, client.StreamID)
+
+	logger.Info("用户设备离线", zap.Int64("StreamID", client.StreamID), zap.Int("用户在线设备数", len(streamClients)))
+	if len(streamClients) == 0 {
+		delete(p.UserStreamClientMap, client.UserID)
+	}
 }
