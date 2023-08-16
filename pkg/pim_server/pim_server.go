@@ -30,6 +30,8 @@ type PimServer struct {
 	clients map[int64]*RpcClient
 	rw      *sync.RWMutex
 	// 用户映射还没加
+	// 群映射 groupID -> userID
+	groups map[int64][]int64
 }
 
 // 初始化业务

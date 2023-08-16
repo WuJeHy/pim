@@ -31,6 +31,7 @@ func (p *PimServer) CreateGroup(ctx context.Context, req *api.CreateGroupReq) (r
 		logger.Error("群主ID有误", zap.Int64("user_id", p.clients[req.StreamID].UserID), zap.Int64("stream_id", req.StreamID))
 		return
 	}
+
 	groupMasterInfo := &models.GroupMember{
 		GroupID:  groupBaseInfo.GroupID,
 		MemberID: masterInfo.MemberID,
@@ -38,6 +39,7 @@ func (p *PimServer) CreateGroup(ctx context.Context, req *api.CreateGroupReq) (r
 		//UserType: codes.GroupUserTypeMaster,
 	}
 	db.Create(groupMasterInfo)
+	p.pushCacheToGroups(groupBaseInfo.GroupID, masterInfo.MemberID)
 	// 插入群成员信息
 	var membersInfo []*models.GroupMember
 	_ = db.Where("user_id in ?", req.Members).Find(&membersInfo).Error
@@ -52,8 +54,10 @@ func (p *PimServer) CreateGroup(ctx context.Context, req *api.CreateGroupReq) (r
 				//UserType: codes.GroupUserTypeNormal,
 			}
 			groupMemberList = append(groupMemberList, temp)
+			p.pushCacheToGroups(groupBaseInfo.GroupID, temp.MemberID)
 		}
 		db.Create(groupMemberList)
+
 	}
 	resp = new(api.CreateGroupResp)
 	// TODO 向群成员推送新聊天事件
@@ -90,6 +94,7 @@ func (p *PimServer) GroupJoinByID(ctx context.Context, req *api.GroupJoinByIDReq
 		Nick: this.Nick,
 	}
 	db.Create(&thisGroupMember)
+
 	// 查找所有群成员
 	var groupMembers []*models.GroupMember
 	_ = db.Where("group_id = ?", req.GroupID).Find(&groupMembers).Error
@@ -103,6 +108,7 @@ func (p *PimServer) GroupJoinByID(ctx context.Context, req *api.GroupJoinByIDReq
 	return
 }
 
+// GroupInviteMembers 群成员邀请新成员
 func (p *PimServer) GroupInviteMembers(ctx context.Context, req *api.GroupInviteMembersReq) (resp *api.BaseOk, err error) {
 	// TODO 鉴权
 	// 鉴权失败
@@ -158,6 +164,34 @@ func (p *PimServer) GroupEditNotification(ctx context.Context, req *api.GroupEdi
 }
 
 func (p *PimServer) GroupRemoveMembers(ctx context.Context, req *api.GroupRemoveMembersReq) (resp *api.BaseOk, err error) {
-	//TODO implement me
+	// TODO 鉴权
+	// 鉴权失败
+	// 鉴权成功
+	db := p.svr.db
+	logger := p.svr.logger
+	// 是否是管理员或群主
+	// 否，return
+	var thisUserInfoViewer models.UserInfoViewer
+	_ = db.Where("user_id = ?", p.clients[req.StreamID].UserID).Take(&thisUserInfoViewer).Error
+	//if thisUserInfoViewer.UserType == codes.GroupUserTypeNormal
+	if thisUserInfoViewer.UserType == 0 {
+		logger.Info("用户无权限删除用户", zap.Int64("user_id", thisUserInfoViewer.UserID))
+		return
+	}
+	// 删除群成员信息
+	var deletedGroupMembers []models.GroupMember
+	for k, m := range req.Members {
+		deletedGroupMembers[k] = models.GroupMember{
+			MemberID: m,
+		}
+	}
+	_ = db.Delete(&deletedGroupMembers).Error
+	// 删除群成员对应缓存
+	// 向被删除的成员推送"已被移出群聊信息"
+	resp = new(api.BaseOk)
 	return
+}
+
+func (p *PimServer) pushCacheToGroups(groupID int64, values ...int64) {
+	p.groups[groupID] = append(p.groups[groupID], values...)
 }

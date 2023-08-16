@@ -188,10 +188,10 @@ func SetRpcService(port int) Option {
 			svr:     svr,
 			rw:      new(sync.RWMutex),
 			clients: make(map[int64]*RpcClient, 128),
+			groups:  make(map[int64][]int64, 128),
 		}
 
 		svr.grpcd = grpc.NewServer()
-
 		// 参数分别是grpc服务与自己的服务
 		api.RegisterPimServerServer(svr.grpcd, svr.pim)
 	}
