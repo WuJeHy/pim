@@ -2,6 +2,7 @@ package pim_server
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/gomodule/redigo/redis"
@@ -100,5 +101,81 @@ func (p *PimServer) CrateChat(ctx context.Context, req *api.UserIDReq) (resp *ap
 	_, err = redisConn.Do("EXPIRE", rkey, 3600*24*7)
 
 	err = nil
+	return
+}
+
+func (p *PimServer) SendMessage(ctx context.Context, req *api.SendMessageReq) (resp *api.SendMessageResp, err error) {
+	// 发送消息
+
+	tokenInfo, err := p.CheckAuthByStream(req)
+
+	if err != nil {
+		return
+	}
+
+	msgID := p.GenMsgID()
+	//
+	createAt := msgID.Time()
+
+	paramJson, _ := json.Marshal(req.Params)
+	atUserJson, _ := json.Marshal(req.AtUser)
+	newMessageID := msgID.Int64()
+	// 产生消息
+	saveMsg := &models.SingleMessage{
+		MsgID:            newMessageID,
+		CreatedAt:        createAt,
+		UpdatedAt:        createAt,
+		Sender:           tokenInfo.GetUserID(),
+		ChatID:           req.ChatID,
+		MsgType:          int(req.GetType()),
+		MsgStatus:        int(api.MessageStatusEnum_MessageStatusSend),
+		Text:             req.MessageText,
+		Params:           paramJson,
+		AtUser:           atUserJson,
+		ReplyToMessageID: req.ReplyToMessageID,
+		ReplyInChatID:    req.ReplyInChatID,
+		//Body:             []byte(req.MessageText),
+		//Attach:           req.Attach,
+	}
+
+	sendMsg := &api.Message{
+		ID:               newMessageID,
+		CreatedAt:        createAt,
+		UpdatedAt:        createAt,
+		Sender:           tokenInfo.GetUserID(),
+		ChatID:           req.ChatID,
+		Type:             req.GetType(),
+		MessageText:      req.GetMessageText(),
+		ReplyToMessageID: req.GetReplyToMessageID(),
+		ReplyInChatID:    req.GetReplyInChatID(),
+		AtUser:           req.GetAtUser(),
+		Status:           api.MessageStatusEnum_MessageStatusSend,
+	}
+
+	// 推送给我和对方
+
+	p.svr.saveMessageChan <- saveMsg
+	p.svr.sendMessageChan <- sendMsg
+
+	//sendMsg := &models.SingleMessageDataType{
+	//	MsgID:            newMessageID,
+	//	CreatedAt:        createAt,
+	//	UpdatedAt:        createAt,
+	//	Sender:           c.UserID,
+	//	ChatID:           req.ChatID,
+	//	MsgType:          req.MsgType,
+	//	MsgStatus:        models.SenderMsgStateSend,
+	//	Body:             sav,
+	//	Attach:           req.Attach,
+	//	Params:           req.Params,
+	//	AtUser:           req.AtUser,
+	//	ReplyToMessageID: req.ReplyToMessageID,
+	//	ReplyInChatID:    req.ReplyInChatID,
+	//}
+
+	resp = new(api.SendMessageResp)
+
+	resp.ID = newMessageID
+
 	return
 }
