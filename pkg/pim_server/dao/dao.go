@@ -16,8 +16,8 @@ import (
 )
 
 type CacheValue struct {
-	UpdateAt int64
-	Value    interface{}
+	UpdateAt int64       // UpdateAt 最后一次取的时间
+	Value    interface{} // Value 存实际的对象指针
 }
 
 func (c *CacheValue) UpdateTime() {
@@ -81,27 +81,18 @@ func (d *Dao) GetChatInfoByID(myUserID int64, chatID int64) (info *api.ChatInfoD
 	rkey := fmt.Sprintf("%s:%X:%X", codes.RedisUserChatListPrefix, myUserID, chatID)
 
 	// 从redis中获取所有消息
-	//replyBytes, err := redis.Values(redisConn.Do("HGETALL", rkey))
-	//if err != nil {
-	//	return
-	//}
-	//
-	//// 有数据库 这是一个json
-	//
-	//info = new(api.ChatInfoDataType)
-	//
-	//// 将redis返回的数据包装成一个对象
-	//// 假如replyBytes为空会抛出error
-	//err = redis.ScanStruct(replyBytes, info)
+	replyBytes, err := redis.Values(redisConn.Do("HGETALL", rkey))
+	if err != nil {
+		return
+	}
 
-	// 使用本地cache 替代 redis 方法
+	// 有数据库 这是一个json
 
-	// 方法一: 直接使用
-	//cacheValue , err := d.GetCacheKey(rkey)
+	info = new(api.ChatInfoDataType)
 
-	info, err = GetChatInfoCacheValue(d, rkey)
-
-	// 方法二: 封装后使用
+	// 将redis返回的数据包装成一个对象
+	// 假如replyBytes为空会抛出error
+	err = redis.ScanStruct(replyBytes, info)
 
 	//err = json.Unmarshal(replyBytes, resp)
 	if err == nil {
@@ -187,12 +178,6 @@ func (d *Dao) GetCacheKey(key string, update ...bool) (interface{}, error) {
 	value, isok := d.cacheGlobalMap[key]
 	if isok {
 		if value.Value != nil {
-			// 更新有效期
-			if len(update) > 0 {
-				if update[0] {
-					value.UpdateTime()
-				}
-			}
 			return value.Value, nil
 		} else {
 			// 顺便清理这个key
