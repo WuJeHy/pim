@@ -100,7 +100,7 @@ type PimServer struct {
 	rw      *sync.RWMutex
 	// 使用 用户id 查找流信息
 	UserStreamClientMap UserStreamClientMapType
-	groups map[int64][]int64
+	groups              map[int64][]int64
 }
 
 func SetNodeID() Option {
@@ -441,7 +441,7 @@ func (p *PimServer) SendMessage(ctx context.Context, req *api.SendMessageReq) (r
 	paramJson, _ := json.Marshal(req.Params)
 	atUserJson, _ := json.Marshal(req.AtUser)
 	newMessageID := msgID.Int64()
-	//// 产生消息
+	// 产生消息
 	saveMsg := &models.SingleMessage{
 		MsgID:            newMessageID,
 		CreatedAt:        createAt,

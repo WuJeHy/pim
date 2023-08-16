@@ -83,6 +83,7 @@ func (s *server) Run() error {
 
 	go s.StartSenderMessageEventService()
 	go s.StartSaveMessageEventService()
+	go s.StartAutoClearFileTaskService()
 
 	go func() {
 		// service connections
