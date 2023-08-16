@@ -34,16 +34,18 @@ const (
 )
 
 type SingleMessage struct {
-	MsgID            int64          `form:"msg_id" json:"msg_id" gorm:"type:bigint;primarykey;comment:基础id"` // 基础id 10 位数 1000000000 开始
-	CreatedAt        int64          `json:"created_at" gorm:"autoCreateTime:milli"`
-	UpdatedAt        int64          `json:"-" gorm:"autoUpdateTime:milli"`
-	DeletedAt        gorm.DeletedAt `gorm:"index" json:"-"`
-	Sender           int64          `json:"sender"`
-	ChatID           int64          `json:"chat_id"`
-	MsgType          int            `json:"msg_type"`   // 1 -- 文本消息 2 -- 图片消息
-	MsgStatus        int            `json:"msg_status"` // 消息的状态 1 -- 发送成功 , 2 -- 接收成功 , 3 -- 确认接收
-	Body             []byte         `json:"body"`
-	Attach           []byte         `json:"attach"`
+	MsgID     int64          `form:"msg_id" json:"msg_id" gorm:"type:bigint;primarykey;comment:基础id"` // 基础id 10 位数 1000000000 开始
+	CreatedAt int64          `json:"created_at" gorm:"autoCreateTime:milli"`
+	UpdatedAt int64          `json:"-" gorm:"autoUpdateTime:milli"`
+	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
+	Sender    int64          `json:"sender"`
+	ChatID    int64          `json:"chat_id"`
+	MsgType   int            `json:"msg_type"`   // 1 -- 文本消息 2 -- 图片消息
+	MsgStatus int            `json:"msg_status"` // 消息的状态 1 -- 发送成功 , 2 -- 接收成功 , 3 -- 确认接收
+	Text      string         `json:"text"`       // 消息的文本部分
+	//Image
+	//Body             []byte         `json:"body"`
+	//Attach           []byte         `json:"attach"`
 	Params           datatypes.JSON `json:"params"`
 	AtUser           datatypes.JSON `json:"at_user"`
 	ReplyToMessageID int64          `json:"reply_to_message_id"`

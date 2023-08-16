@@ -14,6 +14,7 @@ import (
 	"os"
 	"os/signal"
 	"pim/api"
+	"pim/pkg/models"
 	"pim/pkg/pim_server/dao"
 	"pim/pkg/promePkg"
 	"pim/pkg/tools"
@@ -23,17 +24,20 @@ import (
 )
 
 type server struct {
-	logger      *zap.Logger
-	redisPool   *redis.Pool
-	db          *gorm.DB
-	closeServer chan struct{}
-	config      *ImServerConfig
-	mu          sync.RWMutex
-	dao         dao.APIDao
-	dbLogger    *DBLogger
-	grpcd       *grpc.Server
-	pim         *PimServer
-	rpc_port    int
+	logger          *zap.Logger
+	redisPool       *redis.Pool
+	db              *gorm.DB
+	closeServer     chan struct{}
+	config          *ImServerConfig
+	mu              sync.RWMutex
+	dao             dao.APIDao
+	dbLogger        *DBLogger
+	grpcd           *grpc.Server
+	pim             *PimServer
+	rpc_port        int
+	msgNode         *tools.Node
+	sendMessageChan chan *api.Message
+	saveMessageChan chan *models.SingleMessage
 }
 
 type DBLogger struct {
@@ -162,6 +166,8 @@ func RunApp(config *ImServerConfig) {
 		logger: svr.logger,
 	}
 
+	SetNodeID()(svr)
+	SetMessageChan()(svr)
 	// redis池
 	SetRedis(config.RedisIP, config.RedisPassword, config.RedisDB)(svr)
 
@@ -173,11 +179,19 @@ func RunApp(config *ImServerConfig) {
 
 	// grpc
 	SetRpcService(config.RpcPort)(svr)
+
 	// 计数器
 	promePkg.InitConter()
 
 	svr.Run()
 
+}
+
+func SetMessageChan() Option {
+	return func(svr *server) {
+		svr.sendMessageChan = make(chan *api.Message, 16)
+		svr.saveMessageChan = make(chan *models.SingleMessage, 16)
+	}
 }
 
 // SetRpcService 注册pim服务
@@ -188,7 +202,7 @@ func SetRpcService(port int) Option {
 			svr:                 svr,
 			rw:                  new(sync.RWMutex),
 			clients:             make(map[int64]*RpcClient, 128),
-			UserStreamClientMap: make(map[int64]StreamClientType, 8),
+			UserStreamClientMap: make(UserStreamClientMapType, 8),
 		}
 
 		svr.grpcd = grpc.NewServer()

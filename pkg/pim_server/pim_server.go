@@ -2,6 +2,7 @@ package pim_server
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/google/uuid"
@@ -60,13 +61,51 @@ func (p *PimServer) CheckAuthByStream(req StreamInfoReq) (token TokenInfo, err e
 // StreamClientType 类型别名
 type StreamClientType map[int64]*RpcClient
 
+// PushUserEvent 封装直接向某个用户推送
+func (s StreamClientType) PushUserEvent(event *api.UpdateEventDataType) {
+	for _, client := range s {
+		client.PushFunc(event)
+	}
+}
+
+// PushUserEventByPf 封装直接向某个用户的某个平台推送
+func (s StreamClientType) PushUserEventByPf(pf int, event *api.UpdateEventDataType) {
+	for _, client := range s {
+		if client.Pf == pf {
+			client.PushFunc(event)
+		}
+	}
+}
+
+type UserStreamClientMapType map[int64]StreamClientType
+
+// PushUserEvent 直接推送给指定的用户
+func (u UserStreamClientMapType) PushUserEvent(userID int64, event *api.UpdateEventDataType) {
+
+	streamClient, isok := u[userID]
+	if isok {
+		streamClient.PushUserEvent(event)
+	}
+
+}
+func (p *PimServer) GenMsgID() tools.ID {
+	return p.svr.msgNode.Generate()
+}
+
 type PimServer struct {
 	svr *server
 	// 这个map 是调用接口的时候快速查询用的
+	// 使用 流id 查询基本信息
 	clients map[int64]*RpcClient
 	rw      *sync.RWMutex
-	// TODO 用户映射还没加
-	UserStreamClientMap map[int64]StreamClientType
+	// 使用 用户id 查找流信息
+	UserStreamClientMap UserStreamClientMapType
+}
+
+func SetNodeID() Option {
+	return func(svr *server) {
+		svr.msgNode, _ = tools.NewNode(int64(1))
+	}
 }
 
 // 初始化业务
@@ -386,8 +425,79 @@ func (p *PimServer) AddUserToContact(ctx context.Context, req *api.AddUserToCont
 }
 
 func (p *PimServer) SendMessage(ctx context.Context, req *api.SendMessageReq) (resp *api.SendMessageResp, err error) {
-	//TODO implement me
-	panic("implement me")
+	// 发送消息
+
+	tokenInfo, err := p.CheckAuthByStream(req)
+
+	if err != nil {
+		return
+	}
+
+	msgID := p.GenMsgID()
+	//
+	createAt := msgID.Time()
+
+	paramJson, _ := json.Marshal(req.Params)
+	atUserJson, _ := json.Marshal(req.AtUser)
+	newMessageID := msgID.Int64()
+	//// 产生消息
+	saveMsg := &models.SingleMessage{
+		MsgID:            newMessageID,
+		CreatedAt:        createAt,
+		UpdatedAt:        createAt,
+		Sender:           tokenInfo.GetUserID(),
+		ChatID:           req.ChatID,
+		MsgType:          int(req.GetType()),
+		MsgStatus:        int(api.MessageStatusEnum_MessageStatusSend),
+		Text:             req.MessageText,
+		Params:           paramJson,
+		AtUser:           atUserJson,
+		ReplyToMessageID: req.ReplyToMessageID,
+		ReplyInChatID:    req.ReplyInChatID,
+		//Body:             []byte(req.MessageText),
+		//Attach:           req.Attach,
+	}
+
+	sendMsg := &api.Message{
+		ID:               newMessageID,
+		CreatedAt:        createAt,
+		UpdatedAt:        createAt,
+		Sender:           tokenInfo.GetUserID(),
+		ChatID:           req.ChatID,
+		Type:             req.GetType(),
+		MessageText:      req.GetMessageText(),
+		ReplyToMessageID: req.GetReplyToMessageID(),
+		ReplyInChatID:    req.GetReplyInChatID(),
+		AtUser:           req.GetAtUser(),
+		Status:           api.MessageStatusEnum_MessageStatusSend,
+	}
+
+	// 推送给我和对方
+
+	p.svr.saveMessageChan <- saveMsg
+	p.svr.sendMessageChan <- sendMsg
+
+	//sendMsg := &models.SingleMessageDataType{
+	//	MsgID:            newMessageID,
+	//	CreatedAt:        createAt,
+	//	UpdatedAt:        createAt,
+	//	Sender:           c.UserID,
+	//	ChatID:           req.ChatID,
+	//	MsgType:          req.MsgType,
+	//	MsgStatus:        models.SenderMsgStateSend,
+	//	Body:             sav,
+	//	Attach:           req.Attach,
+	//	Params:           req.Params,
+	//	AtUser:           req.AtUser,
+	//	ReplyToMessageID: req.ReplyToMessageID,
+	//	ReplyInChatID:    req.ReplyInChatID,
+	//}
+
+	resp = new(api.SendMessageResp)
+
+	resp.ID = newMessageID
+
+	return
 }
 
 func (p *PimServer) GetClientByStream(streamID int64) (client *RpcClient, isok bool) {
