@@ -6,7 +6,7 @@ import (
 	"google.golang.org/protobuf/types/known/anypb"
 	"pim/api"
 	"pim/pkg/models"
-	time "time"
+	"time"
 )
 
 // CreateGroup 创建群聊
@@ -84,21 +84,34 @@ func (p *PimServer) CreateGroup(ctx context.Context, req *api.CreateGroupReq) (r
 	}
 	resp = new(api.CreateGroupResp)
 	// TODO 向群成员推送新聊天事件
-	newChatInfoDataType := api.NewChatInfoDataType{
-		ChatName:  groupBaseInfo.Name,
-		ChatTitle: groupBaseInfo.Name,
-		ChatTo:    groupBaseInfo.GroupID,
-		UpdateAt:  groupCreatedTime,
+	chatInfo := &api.ChatInfoDataType{
+		ChatName:       groupBaseInfo.Name,
+		ChatTitle:      groupBaseInfo.Name,
+		ChatId:         groupBaseInfo.GroupID,
+		LastUpdateTime: groupCreatedTime,
 	}
+
+	newChatInfoDataType := api.NewChatInfoDataType{
+		ChatInfo: chatInfo,
+	}
+
 	newChatInfoBody, _ := anypb.New(&newChatInfoDataType)
 	newChatInfoPushedData := &api.UpdateEventDataType{
 		Type: api.UpdateEventDataType_NewChatInfo,
 		Body: newChatInfoBody,
 	}
 
-	for _, m := range req.Members {
-		p.UserStreamClientMap.PushUserEvent(m, newChatInfoPushedData)
+	// NOTE 这里有bug , member 入参的时候无法确定合法性 ,
+	//for _, m := range req.Members {
+	//	p.UserStreamClientMap.PushUserEvent(m, newChatInfoPushedData)
+	//}
+	//
+	// 以处理后的成员信息 为准 , 因为有的成员被拉黑之类的 , req.Member 甚至有问题的id
+	// 有的任务屏蔽了信息 所以以处理后的目标成员为准
+	for _, member := range membersInfo {
+		p.UserStreamClientMap.PushUserEvent(member.MemberID, newChatInfoPushedData)
 	}
+
 	p.UserStreamClientMap.PushUserEvent(groupMasterInfo.MemberID, newChatInfoPushedData)
 	// TODO 向群成员推送"欢迎加入"事件
 	//body := api
@@ -189,6 +202,7 @@ func (p *PimServer) GroupInviteMembers(ctx context.Context, req *api.GroupInvite
 				GroupID:  group.GroupID,
 				MemberID: am.UserID,
 				Nick:     am.Nick,
+				UserType: int(api.GroupMemberUserEnumType_GroupMemberUserEnumTypeNormal),
 				//UserType: codes.GroupUserTypeNormal,
 			}
 			groupMembers = append(groupMembers, &temp)
@@ -261,13 +275,20 @@ func (p *PimServer) GroupRemoveMembers(ctx context.Context, req *api.GroupRemove
 		return
 	}
 	// 删除群成员信息
-	var deletedGroupMembers []models.GroupMember
-	for k, m := range req.Members {
-		deletedGroupMembers[k] = models.GroupMember{
-			MemberID: m,
-		}
-	}
-	_ = db.Delete(&deletedGroupMembers).Error
+	// TODO 处理复杂化
+	// 1. 数组没有定义长度的情况下 deletedGroupMembers[k]
+	// 因为 deletedGroupMembers = nil ,
+	// 所以 deletedGroupMembers[1] 是空指针 , 直接程序 panic
+	// 删除 完全可以 使用 where  user_id in [1,2,3]  这样的sql 语句解决
+	// gorm 直接 db.Where("user_id in ? " , []int{} ).Delete(...)
+	//var deletedGroupMembers []models.GroupMember
+	//for k, m := range req.Members {
+	//  这里会崩
+	//	deletedGroupMembers[k] = models.GroupMember{
+	//		MemberID: m,
+	//	}
+	//}
+	//_ = db.Delete(&deletedGroupMembers).Error
 	// 删除群成员对应缓存
 	// 向被删除的成员推送"已被移出群聊信息"
 	resp = new(api.BaseOk)
@@ -286,5 +307,17 @@ func (p *PimServer) pushCacheToGroups(groupID int64, values ...int64) {
 }
 
 func (p *PimServer) convertStreamIDToUserID(streamID int64) int64 {
-	return p.clients[streamID].UserID
+	//TODO  这里有问题 ,如果streamID 找不到 数据
+	// p.clients[streamID] 为 nil 时
+	// 没有 UserID 成员
+	//return p.clients[streamID].UserID
+	// 正确写法是
+
+	findClient, isok := p.clients[streamID]
+	if isok {
+		return findClient.UserID
+	} else {
+		return 0
+	}
+
 }

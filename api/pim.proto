@@ -5,6 +5,7 @@ package api;
 option go_package = "api/";
 
 
+//=============================服务区域 Begin ==================================
 service PimServer {
   //  通知事件模块
   rpc UpdateEvent (TokenReq) returns (stream UpdateEventDataType);
@@ -36,10 +37,11 @@ service PimServer {
   //  移除群成员
   rpc GroupRemoveMembers(GroupRemoveMembersReq) returns (BaseOk);
 
-
 }
+//=============================服务区域 End ==================================
 
 
+//=========================== 通用结构区 Begin =========================================
 // 登录的Token
 message TokenReq {
   string Token = 1 ;
@@ -54,11 +56,34 @@ message StreamReq {
   int64 StreamID = 1; // 使用int64 检索 可以比字符快且数据包更小
 }
 
+
 // 只有一个 user id 的结构 可能通用的
 message UserIDReq {
   int64 StreamID = 1; // 使用int64 检索 可以比字符快且数据包更小
   int64 UserID = 2 ;
 }
+
+// 空数据 一样代表成功
+message BaseOk {
+  int64  Code = 1 ; // 可以为空 特殊接口可以使用code 设置处理方法
+}
+
+
+// 凡是和聊天相关的都会用到相同的聊天信息结构
+message ChatInfoDataType {
+  int64 chat_id = 1 ;
+  int64 my_user_id = 2 ;
+  string chat_name = 3;
+  string chat_title = 4;
+  int64 last_update_time = 5;
+  int64 last_msg_id = 6;
+
+}
+
+//=========================== 通用结构区 END =========================================
+
+//=========================== 事件定义区 Begin =========================================
+
 // 推送的事件信息
 message UpdateEventDataType {
   //   数据包类型 类似 mod type  , sub type 用于定位类型的解析
@@ -81,26 +106,17 @@ message UpdateEventDataType {
   google.protobuf.Any body = 2 ;
 }
 
-message NewChatInfoDataType{
-  string ChatName = 1;
-  string ChatTitle = 2;
-  int64 ChatTo = 3;
-  int64 UpdateAt = 4;
-}
-
 // 参考群通知事件类型
 message UpdateGroupNotificationDataType {
   int64 FromID = 1 ; // 修改者的id
   string Notification = 2 ;
   int64 UpdatedAt = 3;
 }
-
 message UpdateGroupNewMemberDataType{
   string NewMemberNick = 1;
   int64 UpdateAt = 2;
   string InvitedBy = 3;
 }
-
 message ConnectSuccessDataType {
   int64 StreamID = 1;
 }
@@ -117,10 +133,16 @@ message UpdateUserInfoDataType {
   UserInfoViewerDataType UserInfo = 1 ;
 }
 
-
-message GroupNotificationDataType{
-  string Notification = 1;
+message NewChatInfoDataType {
+  ChatInfoDataType ChatInfo = 1 ;
 }
+//=========================== 事件定义区 End =========================================
+
+
+//=========================== 普通接口定义去 Begin =========================================
+
+
+
 
 message RegisterReq {
   string Username = 1 ;
@@ -128,10 +150,6 @@ message RegisterReq {
   string Email = 3 ;
 }
 
-// 空数据 一样代表成功
-message BaseOk {
-  int64  Code = 1 ; // 可以为空 特殊接口可以使用code 设置处理方法
-}
 
 message LoginReq {
   enum LoginType {
@@ -180,6 +198,13 @@ enum UserStatusEnumType {
 
 enum UserTypeEnumType {
   UserTypeEnumTypeUnknown = 0 ;
+}
+
+enum GroupMemberUserEnumType {
+  GroupMemberUserEnumTypeNormal = 0 ;// 普通用户
+  GroupMemberUserEnumTypeAdmin = 1 ;// 管理者者
+  GroupMemberUserEnumTypeCreator = 2 ;// 创建者
+
 }
 
 message UserInfoViewerDataType {
@@ -324,12 +349,5 @@ message GroupRemoveMembersReq{
   repeated int64 Members = 3 ;
 }
 
-message ChatInfoDataType {
-  int64 chat_id = 1 ;
-  int64 my_user_id = 2 ;
-  string chat_name = 3;
-  string chat_title = 4;
-  int64 last_update_time = 5;
-  int64 last_msg_id = 6;
 
-}
+//=========================== 普通接口定义去 End =========================================
