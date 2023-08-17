@@ -81,13 +81,26 @@ message UpdateEventDataType {
   google.protobuf.Any body = 2 ;
 }
 
+message NewChatInfoDataType{
+  string ChatName = 1;
+  string ChatTitle = 2;
+  int64 ChatTo = 3;
+  int64 UpdateAt = 4;
+}
+
 // 参考群通知事件类型
 message UpdateGroupNotificationDataType {
   int64 FromID = 1 ; // 修改者的id
   string Notification = 2 ;
   int64 UpdatedAt = 3;
-
 }
+
+message UpdateGroupNewMemberDataType{
+  string NewMemberNick = 1;
+  int64 UpdateAt = 2;
+  string InvitedBy = 3;
+}
+
 message ConnectSuccessDataType {
   int64 StreamID = 1;
 }
@@ -103,6 +116,7 @@ message KickDeviceDataType {
 message UpdateUserInfoDataType {
   UserInfoViewerDataType UserInfo = 1 ;
 }
+
 
 message GroupNotificationDataType{
   string Notification = 1;

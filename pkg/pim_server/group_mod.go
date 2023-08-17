@@ -3,8 +3,10 @@ package pim_server
 import (
 	"context"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/types/known/anypb"
 	"pim/api"
 	"pim/pkg/models"
+	time "time"
 )
 
 // CreateGroup 创建群聊
@@ -25,6 +27,7 @@ func (p *PimServer) CreateGroup(ctx context.Context, req *api.CreateGroupReq) (r
 		Name: req.Name,
 	}
 	// 创建成功后，主键的值将会被插入groupBaseInfo中
+	groupCreatedTime := time.Now().Unix()
 	err = db.Create(&groupBaseInfo).Error
 	if err != nil {
 		logger.Error("群信息插入失败", zap.Int64("stream_id", req.StreamID))
@@ -52,6 +55,11 @@ func (p *PimServer) CreateGroup(ctx context.Context, req *api.CreateGroupReq) (r
 
 	if len(membersInfo) != 0 {
 		var groupMemberList []*models.GroupMember
+		updateGroupNewMemberDataTypeModel := api.UpdateGroupNewMemberDataType{
+			UpdateAt:  groupCreatedTime,
+			InvitedBy: groupMasterInfo.Nick,
+		}
+
 		for _, m := range membersInfo {
 			temp := &models.GroupMember{
 				GroupID:  groupBaseInfo.GroupID,
@@ -61,13 +69,39 @@ func (p *PimServer) CreateGroup(ctx context.Context, req *api.CreateGroupReq) (r
 			}
 			groupMemberList = append(groupMemberList, temp)
 			p.pushCacheToGroups(groupBaseInfo.GroupID, temp.MemberID)
+
+			updateGroupNewMemberDataTypeModel.NewMemberNick = temp.Nick
+			updateGroupNewMemberBody, _ := anypb.New(updateGroupNewMemberDataTypeModel)
+			updateGroupNewMemberPushedData := &api.UpdateEventDataType{
+				Type: api.UpdateEventDataType_UpdateGroupNewMember,
+				Body: updateGroupNewMemberBody,
+			}
+			p.UserStreamClientMap.PushUserEvent(temp.MemberID, updateGroupNewMemberPushedData)
+			p.UserStreamClientMap.PushUserEvent(groupMasterInfo.MemberID, updateGroupNewMemberPushedData)
 		}
 		db.Create(groupMemberList)
 
 	}
 	resp = new(api.CreateGroupResp)
 	// TODO 向群成员推送新聊天事件
+	newChatInfoDataType := api.NewChatInfoDataType{
+		ChatName:  groupBaseInfo.Name,
+		ChatTitle: groupBaseInfo.Name,
+		ChatTo:    groupBaseInfo.GroupID,
+		UpdateAt:  groupCreatedTime,
+	}
+	newChatInfoBody, _ := anypb.New(newChatInfoDataType)
+	newChatInfoPushedData := &api.UpdateEventDataType{
+		Type: api.UpdateEventDataType_NewChatInfo,
+		Body: newChatInfoBody,
+	}
+
+	for _, m := range req.Members {
+		p.UserStreamClientMap.PushUserEvent(m, newChatInfoPushedData)
+	}
+	p.UserStreamClientMap.PushUserEvent(groupMasterInfo.MemberID, newChatInfoPushedData)
 	// TODO 向群成员推送"欢迎加入"事件
+	//body := api
 	return
 }
 
@@ -92,6 +126,9 @@ func (p *PimServer) GroupJoinByID(ctx context.Context, req *api.GroupJoinByIDReq
 		logger.Error("查无此群", zap.Int64("group_id", req.GroupID), zap.Int64("stream_id", req.StreamID))
 		return
 	}
+	// 查找所有群成员
+	var oldGroupMembers []*models.GroupMember
+	_ = db.Where("group_id = ?", req.GroupID).Find(&oldGroupMembers).Error
 	// 添加群成员信息
 	var this models.UserInfoViewer
 	err = db.Where("user_id = ?", p.clients[req.StreamID].UserID).Take(&this).Error
@@ -107,13 +144,8 @@ func (p *PimServer) GroupJoinByID(ctx context.Context, req *api.GroupJoinByIDReq
 	}
 	db.Create(&thisGroupMember)
 
-	// 查找所有群成员
-	var groupMembers []*models.GroupMember
-	_ = db.Where("group_id = ?", req.GroupID).Find(&groupMembers).Error
 	// TODO 向所有成员推送"新人入群"通知
-	if len(groupMembers) != 0 {
-		//for _, m := range groupMembers{
-		//}
+	if len(oldGroupMembers) != 0 {
 	}
 	// TODO 推送当前用户新聊天事件
 	resp = new(api.BaseOk)
