@@ -71,7 +71,7 @@ func (p *PimServer) CreateGroup(ctx context.Context, req *api.CreateGroupReq) (r
 			p.pushCacheToGroups(groupBaseInfo.GroupID, temp.MemberID)
 
 			updateGroupNewMemberDataTypeModel.NewMemberNick = temp.Nick
-			updateGroupNewMemberBody, _ := anypb.New(updateGroupNewMemberDataTypeModel)
+			updateGroupNewMemberBody, _ := anypb.New(&updateGroupNewMemberDataTypeModel)
 			updateGroupNewMemberPushedData := &api.UpdateEventDataType{
 				Type: api.UpdateEventDataType_UpdateGroupNewMember,
 				Body: updateGroupNewMemberBody,
@@ -90,7 +90,7 @@ func (p *PimServer) CreateGroup(ctx context.Context, req *api.CreateGroupReq) (r
 		ChatTo:    groupBaseInfo.GroupID,
 		UpdateAt:  groupCreatedTime,
 	}
-	newChatInfoBody, _ := anypb.New(newChatInfoDataType)
+	newChatInfoBody, _ := anypb.New(&newChatInfoDataType)
 	newChatInfoPushedData := &api.UpdateEventDataType{
 		Type: api.UpdateEventDataType_NewChatInfo,
 		Body: newChatInfoBody,
