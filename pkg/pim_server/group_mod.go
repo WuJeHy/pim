@@ -102,6 +102,7 @@ func (p *PimServer) CreateGroup(ctx context.Context, req *api.CreateGroupReq) (r
 	p.UserStreamClientMap.PushUserEvent(groupMasterInfo.MemberID, newChatInfoPushedData)
 	// TODO 向群成员推送"欢迎加入"事件
 	//body := api
+	resp = new(api.CreateGroupResp)
 	return
 }
 
@@ -156,6 +157,12 @@ func (p *PimServer) GroupJoinByID(ctx context.Context, req *api.GroupJoinByIDReq
 func (p *PimServer) GroupInviteMembers(ctx context.Context, req *api.GroupInviteMembersReq) (resp *api.BaseOk, err error) {
 	// TODO 鉴权
 	// 鉴权失败
+	tokenInfo, err := p.CheckAuthByStream(req)
+	if err != nil {
+		return
+	}
+	// 用户信息的使用
+	_ = tokenInfo
 	// 鉴权成功
 	// 基本类似GroupJoinByID
 	db := p.svr.db
@@ -203,13 +210,44 @@ func (p *PimServer) GroupInviteMembers(ctx context.Context, req *api.GroupInvite
 
 func (p *PimServer) GroupEditNotification(ctx context.Context, req *api.GroupEditNotificationReq) (resp *api.BaseOk, err error) {
 	//todo
-
+	// 鉴权
+	tokenInfo, err := p.CheckAuthByStream(req)
+	if err != nil {
+		return
+	}
+	// 用户信息的使用
+	_ = tokenInfo
+	db := p.svr.db
+	logger := p.svr.logger
+	// 用户是否有权限编辑通知
+	// 否，return
+	var thisUserInfoViewer models.UserInfoViewer
+	_ = db.Where("user_id = ?", p.clients[req.StreamID].UserID).Take(&thisUserInfoViewer).Error
+	//if thisUserInfoViewer.UserType == codes.GroupUserTypeNormal
+	if thisUserInfoViewer.UserType == 0 {
+		logger.Info("用户无权限增加群通知", zap.Int64("user_id", thisUserInfoViewer.UserID))
+		return
+	}
+	// 向所有用户推送通知
+	var allGroupMembers []*models.GroupMember
+	_ = db.Where("group_id = ?", req.GroupID).Find(&allGroupMembers).Error
+	if len(allGroupMembers) != 0 {
+		//for _, m := range allGroupMembers {
+		//
+		//}
+	}
 	return
 }
 
 func (p *PimServer) GroupRemoveMembers(ctx context.Context, req *api.GroupRemoveMembersReq) (resp *api.BaseOk, err error) {
-	// TODO 鉴权
+	// 鉴权
 	// 鉴权失败
+	tokenInfo, err := p.CheckAuthByStream(req)
+	if err != nil {
+		return
+	}
+	// 用户信息的使用
+	_ = tokenInfo
 	// 鉴权成功
 	db := p.svr.db
 	logger := p.svr.logger
@@ -236,6 +274,17 @@ func (p *PimServer) GroupRemoveMembers(ctx context.Context, req *api.GroupRemove
 	return
 }
 
+type SimpleGroupMembersStruct []int64
+
+// groupID ->
+type GroupCache map[int64]SimpleGroupMembersStruct
+
+// 缓存群成员，不用每次都找
+// 可是如果每个用户都被缓存在内存可能空间不够
 func (p *PimServer) pushCacheToGroups(groupID int64, values ...int64) {
 	p.groups[groupID] = append(p.groups[groupID], values...)
+}
+
+func (p *PimServer) convertStreamIDToUserID(streamID int64) int64 {
+	return p.clients[streamID].UserID
 }
