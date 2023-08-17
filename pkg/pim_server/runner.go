@@ -140,6 +140,7 @@ func SetMysqlDBByConfig(dbUri string) Option {
 		mgTool := db.Set("gorm:table_options", "ENGINE = InnoDB DEFAULT CHARSET=utf8mb4").Migrator()
 
 		_ = mgTool
+		mgTool.AutoMigrate(&models.SingleMessage{})
 
 	}
 }

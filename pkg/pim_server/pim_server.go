@@ -14,6 +14,7 @@ type RpcClient struct {
 	StreamID int64
 	Level    int
 	PushFunc func(event *api.UpdateEventDataType)
+	svr      *server
 }
 
 // GetUserID 实现token 的接口

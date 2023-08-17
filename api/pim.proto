@@ -103,6 +103,19 @@ message UpdateEventDataType {
 
   Type type = 1 ;
   // 这个body 需要通过不同的类型进行处理
+  // 前期使用官方的 any 封包 , 后期使用bytes 处理
+  // 使用 any 虽然方便操作 , 但是 数据包会变大很多,
+  //  {
+  //  "type": "NewMessage",
+  //  "body": {
+  //    "type_url": "type.googleapis.com/api.Message",
+  //    "value": {
+  //      "type": "Buffer",
+  //      "data": [...]
+  //    }
+  //  }
+  //}
+  // 如果数据包很小 type_url 部分的内容占据了 大量的空间 前期开发提高效率直接使用 这个方式处理
   google.protobuf.Any body = 2 ;
 }
 

@@ -27,6 +27,8 @@ type GroupMember struct {
 	//	... 其他共用参数
 	UserType int    `json:"user_type"` // 用户类型 	GroupUserTypeNormal 	GroupUserTypeAdmin 	GroupUserTypeCreator
 	Nick     string `json:"nick"`      //入群时的用户信息
+	Inviter  int64  `json:"inviter"`   // 邀请人
+
 }
 
 func (g GroupMember) TableName() string {

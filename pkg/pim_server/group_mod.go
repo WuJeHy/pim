@@ -202,6 +202,7 @@ func (p *PimServer) GroupInviteMembers(ctx context.Context, req *api.GroupInvite
 				GroupID:  group.GroupID,
 				MemberID: am.UserID,
 				Nick:     am.Nick,
+				Inviter:  tokenInfo.GetUserID(), // 增加一个 邀请人 业务会更完整 , 还有进群方式类型等...
 				UserType: int(api.GroupMemberUserEnumType_GroupMemberUserEnumTypeNormal),
 				//UserType: codes.GroupUserTypeNormal,
 			}
