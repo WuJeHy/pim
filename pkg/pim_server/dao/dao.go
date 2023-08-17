@@ -46,6 +46,11 @@ type Dao struct {
 	cacheGlobalMap map[string]*CacheValue
 }
 
+func (d *Dao) DeleteUserInfoCache(userID int64) error {
+	//TODO 因为使用的是直接数据库 不需要删缓存
+	return nil
+}
+
 func GetChatInfoCacheValue(d *Dao, key string) (info *api.ChatInfoDataType, err error) {
 	// 同时更新有效期
 	cacheValue, err := d.GetCacheKey(key, true)
@@ -269,6 +274,9 @@ type UserDao interface {
 	GetUserInfoByID(userid int64) (info *models.UserInfoViewer, err error)
 	// GetChatInfoByID 通过当前用户ID与聊天对象ID查询聊天记录
 	GetChatInfoByID(myUserID int64, chatID int64) (info *api.ChatInfoDataType, err error)
+
+	// 删除指定用户的缓存
+	DeleteUserInfoCache(userID int64) error
 }
 
 type APIDao interface {

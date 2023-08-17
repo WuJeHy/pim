@@ -21,6 +21,12 @@ service PimServer {
   rpc GetUserInfoByID(GetUserInfoByIDReq) returns (UserInfoViewerDataType);
   //  添加用户到通讯录
   rpc AddUserToContact(AddUserToContactReq) returns (BaseOk);
+
+  //  修改用户名
+  rpc UserUpdateUsername(UserUpdateInfoReq) returns (BaseOk);
+  rpc UserUpdateNick(UserUpdateInfoReq) returns (BaseOk);
+  rpc UserUpdateAvatar(UserUpdateInfoReq) returns (BaseOk);
+
   // 消息模块
   rpc SendMessage(SendMessageReq) returns (SendMessageResp);
   // 创建一个聊天 到聊天列表
@@ -362,5 +368,12 @@ message GroupRemoveMembersReq{
   repeated int64 Members = 3 ;
 }
 
+
+message UserUpdateInfoReq {
+  int64 StreamID = 1; // 这是必须的
+  optional string Username =2 ;
+  optional string Nick = 3 ;
+  optional bytes Avatar = 4 ;
+}
 
 //=========================== 普通接口定义去 End =========================================

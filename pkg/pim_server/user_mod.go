@@ -235,3 +235,152 @@ func (p *PimServer) AddUserToContact(ctx context.Context, req *api.AddUserToCont
 
 	return
 }
+
+// UserUpdateInfo 更新用户信息
+func (p *PimServer) UserUpdateUsername(ctx context.Context, req *api.UserUpdateInfoReq) (resp *api.BaseOk, err error) {
+
+	tokenInfo, err := p.CheckAuthByStream(req)
+	if err != nil {
+		return
+	}
+
+	// 判断需要更新的东西
+
+	var updateUserInfo models.UserInfoViewer
+
+	if req.Username == nil {
+		// 更新用户名
+		// 检验用户名是否
+		//updateUserInfo.Username
+
+		// 用户名参数错误
+		err = errors.New("参数错误")
+		return
+	}
+
+	// 查看用户名是否被使用
+
+	var findUserName models.UserInfoViewer
+
+	db := p.svr.db
+
+	logger := p.svr.logger
+	findErr := db.Model(&findUserName).Where(&models.UserInfoViewer{
+		Username: req.GetUsername(),
+	}).Find(&findUserName).Error
+	if findErr != nil {
+		logger.Debug("数据库错误", zap.Error(err))
+		err = errors.New("数据库错误")
+		return
+	}
+
+	if findUserName.UserID != 0 {
+		err = errors.New("用户名已被使用")
+		return
+	}
+
+	// 可以使用的用户名
+
+	updateErr := db.Model(&updateUserInfo).Where(&models.UserInfoViewer{
+		UserID: tokenInfo.GetUserID(),
+	}).Update("username", req.GetUsername()).Error
+
+	if updateErr != nil {
+		logger.Debug("update username fail", zap.Error(updateErr))
+		err = errors.New("更新username fail")
+		return
+	}
+	resp = new(api.BaseOk)
+
+	//清理缓存
+
+	_ = p.svr.dao.DeleteUserInfoCache(tokenInfo.GetUserID())
+
+	return
+}
+
+func (p *PimServer) UserUpdateNick(ctx context.Context, req *api.UserUpdateInfoReq) (resp *api.BaseOk, err error) {
+	tokenInfo, err := p.CheckAuthByStream(req)
+	if err != nil {
+		return
+	}
+
+	// 判断需要更新的东西
+
+	var updateUserInfo models.UserInfoViewer
+
+	if req.Nick == nil {
+		// 更新用户名
+		// 检验用户名是否
+		//updateUserInfo.Username
+
+		// 用户名参数错误
+		err = errors.New("参数错误")
+		return
+	}
+
+	// 查看用户名是否被使用
+
+	db := p.svr.db
+
+	logger := p.svr.logger
+
+	// 可以使用的用户名
+
+	updateErr := db.Model(&updateUserInfo).Where(&models.UserInfoViewer{
+		UserID: tokenInfo.GetUserID(),
+	}).Update("nick", req.GetNick()).Error
+
+	if updateErr != nil {
+		logger.Debug("update nick fail", zap.Error(updateErr))
+		err = errors.New("更新 nick fail")
+		return
+	}
+	resp = new(api.BaseOk)
+	_ = p.svr.dao.DeleteUserInfoCache(tokenInfo.GetUserID())
+
+	return
+}
+
+func (p *PimServer) UserUpdateAvatar(ctx context.Context, req *api.UserUpdateInfoReq) (resp *api.BaseOk, err error) {
+	tokenInfo, err := p.CheckAuthByStream(req)
+	if err != nil {
+		return
+	}
+
+	// 判断需要更新的东西
+
+	var updateUserInfo models.UserInfoViewer
+
+	if req.Avatar == nil {
+		// 更新用户名
+		// 检验用户名是否
+		//updateUserInfo.Username
+
+		// 用户名参数错误
+		err = errors.New("参数错误")
+		return
+	}
+
+	// 查看用户名是否被使用
+
+	db := p.svr.db
+
+	logger := p.svr.logger
+
+	// 可以使用的用户名
+
+	updateErr := db.Model(&updateUserInfo).Where(&models.UserInfoViewer{
+		UserID: tokenInfo.GetUserID(),
+	}).Update("avatar", req.GetAvatar()).Error
+
+	if updateErr != nil {
+		logger.Debug("update avatar fail", zap.Error(updateErr))
+		err = errors.New("更新 avatar fail")
+		return
+	}
+	resp = new(api.BaseOk)
+	_ = p.svr.dao.DeleteUserInfoCache(tokenInfo.GetUserID())
+
+	return
+}
