@@ -547,12 +547,34 @@ func (p *PimServer) GroupEditNotification(ctx context.Context, req *api.GroupEdi
 	logger := p.svr.logger
 	// 用户是否有权限编辑通知
 	// 否，return
-	var thisUserInfoViewer models.UserInfoViewer
-	_ = db.Where("user_id = ?", p.clients[req.StreamID].UserID).Take(&thisUserInfoViewer).Error
-	//if thisUserInfoViewer.UserType == codes.GroupUserTypeNormal
-	// 不要使用魔鬼数字
-	if thisUserInfoViewer.UserType != int(api.GroupMemberUserEnumType_GroupMemberUserEnumTypeAdmin) {
-		logger.Info("用户无权限增加群通知", zap.Int64("user_id", thisUserInfoViewer.UserID))
+	//TODO 查询不到群用户信息
+	//var thisUserInfoViewer models.UserInfoViewer
+	////_ = db.Where("user_id = ?", p.clients[req.StreamID].UserID).Take(&thisUserInfoViewer).Error
+	//_ = db.Where("user_id = ?", tokenInfo.GetUserID()).Take(&thisUserInfoViewer).Error
+	////if thisUserInfoViewer.UserType == codes.GroupUserTypeNormal
+	//// 不要使用魔鬼数字
+	//if thisUserInfoViewer.UserType != int(api.GroupMemberUserEnumType_GroupMemberUserEnumTypeAdmin) {
+	//	logger.Info("用户无权限增加群通知", zap.Int64("user_id", thisUserInfoViewer.UserID))
+	//	return
+	//}
+
+	var myInfoByGroup models.GroupMember
+
+	findMemberErr := db.Model(&myInfoByGroup).Where(&models.GroupMember{
+		GroupID:  req.GroupID,
+		MemberID: tokenInfo.GetUserID(),
+	}).Find(&myInfoByGroup).Error
+
+	if findMemberErr != nil || myInfoByGroup.MemberID == 0 || myInfoByGroup.MemberID != tokenInfo.GetUserID() {
+		logger.Info("校验群成员信息失败", zap.Error(findMemberErr))
+		err = errors.New("邀请入群失败,没有权限操作")
+		return
+	}
+
+	if myInfoByGroup.UserType != int(api.GroupMemberUserEnumType_GroupMemberUserEnumTypeAdmin) {
+		logger.Info("用户无权限增加群通知", zap.Int64("user_id", myInfoByGroup.MemberID))
+
+		err = errors.New("没有权限操作")
 		return
 	}
 
@@ -571,7 +593,7 @@ func (p *PimServer) GroupEditNotification(ctx context.Context, req *api.GroupEdi
 
 	var currentGroupMembers []*models.GroupMember
 
-	findMemberErr := db.Model(&models.GroupMember{}).Where(&models.GroupMember{
+	findMemberErr = db.Model(&models.GroupMember{}).Where(&models.GroupMember{
 		GroupID: group.GroupID,
 	}).Find(&currentGroupMembers).Error
 	// 正常邀请的群不可能没有人
@@ -653,13 +675,15 @@ func (p *PimServer) GroupRemoveMembers(ctx context.Context, req *api.GroupRemove
 	logger := p.svr.logger
 	// 是否是管理员或群主
 	// 否，return
-	var thisUserInfoViewer models.UserInfoViewer
-	_ = db.Where("user_id = ?", p.clients[req.StreamID].UserID).Take(&thisUserInfoViewer).Error
-	//if thisUserInfoViewer.UserType == codes.GroupUserTypeNormal
-	if thisUserInfoViewer.UserType == 0 {
-		logger.Info("用户无权限删除用户", zap.Int64("user_id", thisUserInfoViewer.UserID))
-		return
-	}
+	// TODO 这个方法是查询不到 群组信息的 只能查到 user 表 不能查询到 group member 表
+	//var thisUserInfoViewer models.UserInfoViewer
+	////_ = db.Where("user_id = ?", p.clients[req.StreamID].UserID).Take(&thisUserInfoViewer).Error
+	//_ = db.Where("user_id = ?", tokenInfo.GetUserID()).Take(&thisUserInfoViewer).Error
+	////if thisUserInfoViewer.UserType == codes.GroupUserTypeNormal
+	//if thisUserInfoViewer.UserType == 0 {
+	//	logger.Info("用户无权限删除用户", zap.Int64("user_id", thisUserInfoViewer.UserID))
+	//	return
+	//}
 	// 删除群成员信息
 	// TODO 处理复杂化
 	// 1. 数组没有定义长度的情况下 deletedGroupMembers[k]
@@ -677,6 +701,108 @@ func (p *PimServer) GroupRemoveMembers(ctx context.Context, req *api.GroupRemove
 	//_ = db.Delete(&deletedGroupMembers).Error
 	// 删除群成员对应缓存
 	// 向被删除的成员推送"已被移出群聊信息"
+
+	// 删除事件
+	// 删除成员可以不用关系成员存在问题,因为成员只有存在的时候才能删除
+
+	// 查找删除的用户
+
+	// 校验身份
+	var myInfoByGroup models.GroupMember
+
+	findMemberErr := db.Model(&myInfoByGroup).Where(&models.GroupMember{
+		GroupID:  req.GroupID,
+		MemberID: tokenInfo.GetUserID(),
+	}).Find(&myInfoByGroup).Error
+
+	if findMemberErr != nil || myInfoByGroup.MemberID == 0 || myInfoByGroup.MemberID != tokenInfo.GetUserID() {
+		logger.Info("校验群成员信息失败", zap.Error(findMemberErr))
+		err = errors.New("邀请入群失败,没有权限操作")
+		return
+	}
+
+	if myInfoByGroup.UserType != int(api.GroupMemberUserEnumType_GroupMemberUserEnumTypeAdmin) {
+		logger.Info("用户无权限增加群通知", zap.Int64("user_id", myInfoByGroup.MemberID))
+
+		err = errors.New("没有权限操作")
+		return
+	}
+
+	var findDeleteMembers []*models.GroupMember
+
+	findErr := db.Model(&models.GroupMember{}).Where("user_id in ? ", req.Members).Find(&findDeleteMembers).Error
+
+	if findErr != nil || len(findDeleteMembers) == 0 {
+		logger.Error("移除成员错误", zap.Error(findErr))
+		err = errors.New("移除错误")
+		return
+	}
+
+	// 需要遍历 一下id
+
+	// 为了减少 推送量 ,api 也匹配数组的方式推送
+
+	deleteUpdateType := &api.UpdateGroupRemoveMemberDataType{}
+
+	for _, member := range findDeleteMembers {
+		deleteUpdateType.MemberID = append(deleteUpdateType.MemberID, member.MemberID)
+	}
+
+	removeUserErr := db.Where("user_id in ? and group_id = ?", deleteUpdateType.MemberID).Delete(&models.GroupMember{}).Error
+
+	if removeUserErr != nil {
+		logger.Error("删除错误信息", zap.Error(removeUserErr))
+	}
+
+	// 查找剩余的成员
+
+	var findOtherMemebrs []*models.GroupMember
+
+	findErr = db.Model(&models.GroupMember{}).Where(&models.GroupMember{
+		GroupID: req.GroupID,
+	}).Find(&findOtherMemebrs).Error
+
+	if findErr != nil {
+
+		err = errors.New("查询成员失败, 请重试")
+		return
+	}
+
+	genMsgID := p.GenMsgID()
+	deleteUpdateType.UpdatedAt = genMsgID.Time()
+	deleteUpdateType.ManagerID = tokenInfo.GetUserID()
+	deleteUpdateType.MessageID = genMsgID.Int64()
+
+	// 保存到数据库
+
+	paramData, _ := anypb.New(deleteUpdateType)
+	newNotificationMessage := &models.SingleMessage{
+		MsgID:     genMsgID.Int64(),
+		CreatedAt: genMsgID.Time(),
+		Sender:    tokenInfo.GetUserID(),
+		//Params:    paramData,
+		MsgStatus: int(api.MessageStatusEnum_MessageStatusSuccess),
+		MsgType:   int(api.MessageTypeEnum_MessageTypeRemoveMember),
+	}
+	//
+	newNotificationMessage.Params, _ = json.Marshal(paramData)
+
+	senderMsg := &api.Message{
+		ChatID:      newNotificationMessage.ChatID,
+		CreatedAt:   newNotificationMessage.CreatedAt,
+		Sender:      newNotificationMessage.Sender,
+		MessageText: newNotificationMessage.Text,
+		Status:      api.MessageStatusEnum_MessageStatusSuccess,
+		Type:        api.MessageTypeEnum_MessageTypeRemoveMember,
+		ID:          newNotificationMessage.MsgID,
+	}
+
+	senderMsg.Params = paramData
+
+	// 推送给成员
+
+	go pushGroupMemberMessageFunc(p, findDeleteMembers, senderMsg)
+
 	resp = new(api.BaseOk)
 	return
 }

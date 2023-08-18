@@ -144,6 +144,14 @@ message UpdateGroupNewMemberDataType{
   //  复用 消息可以再消息的数据库增加一个字段类型 , 这样 用户拉取消息的时候会客户端顺序才能再聊天框发现这个 事件
   int64 MessageID = 5 ;
 }
+
+message UpdateGroupRemoveMemberDataType {
+  int64 UpdatedAt = 2;
+  int64 ManagerID = 3;
+  repeated int64 MemberID = 4 ;
+  int64 MessageID = 5 ;
+}
+
 message ConnectSuccessDataType {
   int64 StreamID = 1;
 }
@@ -289,7 +297,7 @@ message SendMessageReq {
 
   // Attach 被拆分成不同不同的子类型
   optional MessageTypeImage ImageContent = 6 ; // 可选类型 当消息类型是图片的时候会有图片信息
-//  map<string, string > Params = 7 ;
+  //  map<string, string > Params = 7 ;
   google.protobuf.Any  Params = 7; // 使用泛型
 
   MessageTypeEnum Type = 8 ;
@@ -306,7 +314,8 @@ enum MessageTypeEnum {
   MessageTypeText = 1 ;
   MessageTypeEnumImage = 2 ;
   MessageTypeNewMember = 101 ;
-  MessageTypeUpdateGroupNotification = 102 ;
+  MessageTypeRemoveMember = 102 ;
+  MessageTypeUpdateGroupNotification = 103 ;
 
 
 }
