@@ -132,9 +132,14 @@ message UpdateGroupNotificationDataType {
   int64 UpdatedAt = 3;
 }
 message UpdateGroupNewMemberDataType{
-  string NewMemberNick = 1;
-  int64 UpdateAt = 2;
-  string InvitedBy = 3;
+  //  string NewMemberNick = 1;
+  //  string MemberNick = 1; //已经说明是 新成员了 可以不需要再加New 了 , 实际情况暂时用不到这个数据
+  int64 UpdatedAt = 2;
+  int64 InvitedBy = 3;
+  // TODO 推送新成员 也不通知对方成员的id ...
+  int64 MemberID = 4 ;
+  //  复用 消息可以再消息的数据库增加一个字段类型 , 这样 用户拉取消息的时候会客户端顺序才能再聊天框发现这个 事件
+  int64 MessageID = 5 ;
 }
 message ConnectSuccessDataType {
   int64 StreamID = 1;
@@ -295,6 +300,8 @@ enum MessageTypeEnum {
   MessageTypeUnknown = 0 ; // proto3 必须从0开始
   MessageTypeText = 1 ;
   MessageTypeEnumImage = 2 ;
+  MessageTypeNewMember = 101 ;
+
 }
 //	SenderMsgStateSend    = 1
 //	SenderMsgStateAck     = 2
@@ -371,7 +378,7 @@ message GroupRemoveMembersReq{
 
 message UserUpdateInfoReq {
   int64 StreamID = 1; // 这是必须的
-  optional string Username =2 ;
+  optional string Username = 2 ;
   optional string Nick = 3 ;
   optional bytes Avatar = 4 ;
 }

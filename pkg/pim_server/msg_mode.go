@@ -113,6 +113,10 @@ func (p *PimServer) SendMessage(ctx context.Context, req *api.SendMessageReq) (r
 		return
 	}
 
+	if req.ChatID > 0 {
+		//这是私聊的消息
+	}
+
 	msgID := p.GenMsgID()
 	//
 	createAt := msgID.Time()

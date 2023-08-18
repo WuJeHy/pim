@@ -2,6 +2,7 @@ package pim_server
 
 import (
 	"context"
+	"errors"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/anypb"
 	"pim/api"
@@ -56,8 +57,8 @@ func (p *PimServer) CreateGroup(ctx context.Context, req *api.CreateGroupReq) (r
 	if len(membersInfo) != 0 {
 		var groupMemberList []*models.GroupMember
 		updateGroupNewMemberDataTypeModel := api.UpdateGroupNewMemberDataType{
-			UpdateAt:  groupCreatedTime,
-			InvitedBy: groupMasterInfo.Nick,
+			UpdatedAt: groupCreatedTime,
+			//InvitedBy: groupMasterInfo.Nick,
 		}
 
 		for _, m := range membersInfo {
@@ -65,12 +66,13 @@ func (p *PimServer) CreateGroup(ctx context.Context, req *api.CreateGroupReq) (r
 				GroupID:  groupBaseInfo.GroupID,
 				MemberID: m.MemberID,
 				Nick:     m.Nick,
+				Inviter:  tokenInfo.GetUserID(),
 				//UserType: codes.GroupUserTypeNormal,
 			}
 			groupMemberList = append(groupMemberList, temp)
 			p.pushCacheToGroups(groupBaseInfo.GroupID, temp.MemberID)
 
-			updateGroupNewMemberDataTypeModel.NewMemberNick = temp.Nick
+			//updateGroupNewMemberDataTypeModel.MemberNick = temp.Nick
 			updateGroupNewMemberBody, _ := anypb.New(&updateGroupNewMemberDataTypeModel)
 			updateGroupNewMemberPushedData := &api.UpdateEventDataType{
 				Type: api.UpdateEventDataType_UpdateGroupNewMember,
@@ -140,12 +142,16 @@ func (p *PimServer) GroupJoinByID(ctx context.Context, req *api.GroupJoinByIDReq
 		logger.Error("查无此群", zap.Int64("group_id", req.GroupID), zap.Int64("stream_id", req.StreamID))
 		return
 	}
+	// NOTE 等自己加入后自己也是成员 所以可以直接推送
 	// 查找所有群成员
 	var oldGroupMembers []*models.GroupMember
 	_ = db.Where("group_id = ?", req.GroupID).Find(&oldGroupMembers).Error
 	// 添加群成员信息
 	var this models.UserInfoViewer
-	err = db.Where("user_id = ?", p.clients[req.StreamID].UserID).Take(&this).Error
+	// NOTE 这里直接可以从token 获取到用户信息
+	//err = db.Where("user_id = ?", p.clients[req.StreamID].UserID).Take(&this).Error
+	// 正确的写法
+	err = db.Where("user_id = ?", tokenInfo.GetUserID()).Take(&this).Error
 	if err != nil {
 		logger.Error("查询用户失败", zap.Int64("user_id", req.GroupID), zap.Int64("stream_id", req.StreamID))
 		return
@@ -160,6 +166,7 @@ func (p *PimServer) GroupJoinByID(ctx context.Context, req *api.GroupJoinByIDReq
 
 	// TODO 向所有成员推送"新人入群"通知
 	if len(oldGroupMembers) != 0 {
+
 	}
 	// TODO 推送当前用户新聊天事件
 	resp = new(api.BaseOk)
@@ -189,38 +196,216 @@ func (p *PimServer) GroupInviteMembers(ctx context.Context, req *api.GroupInvite
 		return
 	}
 	// 添加群成员信息
-	var thisMembers []*models.UserInfoViewer
-	err = db.Where("user_id in ?", req.Members).Find(&thisMembers).Error
-	if err != nil {
-		logger.Error("添加群成员信息失败", zap.Int64("group_id", req.GroupID), zap.Int64("stream_id", req.StreamID))
+	//var thisMembers []*models.UserInfoViewer
+	//err = db.Where("user_id in ?", req.Members).Find(&thisMembers).Error
+	//if err != nil {
+	//	logger.Error("添加群成员信息失败", zap.Int64("group_id", req.GroupID), zap.Int64("stream_id", req.StreamID))
+	//	return
+	//}
+	//var groupMembers []*models.GroupMember
+	//if len(thisMembers) != 0 {
+	//	for _, am := range thisMembers {
+	//		temp := models.GroupMember{
+	//			GroupID:  group.GroupID,
+	//			MemberID: am.UserID,
+	//			Nick:     am.Nick,
+	//			Inviter:  tokenInfo.GetUserID(), // 增加一个 邀请人 业务会更完整 , 还有进群方式类型等...
+	//			UserType: int(api.GroupMemberUserEnumType_GroupMemberUserEnumTypeNormal),
+	//			//UserType: codes.GroupUserTypeNormal,
+	//		}
+	//		groupMembers = append(groupMembers, &temp)
+	//
+	//		// 同时添加一条入群消息
+	//
+	//
+	//	}
+	//}
+	//_ = db.Create(&groupMembers)
+	//// TODO 向新用户们推送新聊天事件
+	//// 查找所有群成员
+	//var allGroupMembers []*models.GroupMember
+	//_ = db.Where("group_id = ?", req.GroupID).Find(&allGroupMembers).Error
+	//// TODO 向所有成员推送"新人入群"通知
+	//if len(allGroupMembers) != 0 {
+	//	//for _, m := range groupMembers{
+	//	//}
+	//}
+	//resp = new(api.BaseOk)
+
+	// 判断群里是否有这个邀请者
+
+	var inviterInfoByGroup models.GroupMember
+
+	findMemberErr := db.Model(&inviterInfoByGroup).Where(&models.GroupMember{
+		GroupID:  group.GroupID,
+		MemberID: tokenInfo.GetUserID(),
+	}).Find(&inviterInfoByGroup).Error
+
+	if findMemberErr != nil || inviterInfoByGroup.MemberID == 0 || inviterInfoByGroup.MemberID != tokenInfo.GetUserID() {
+		logger.Info("校验群成员信息失败", zap.Error(findMemberErr))
+		err = errors.New("邀请入群失败,没有权限操作")
 		return
 	}
-	var groupMembers []*models.GroupMember
-	if len(thisMembers) != 0 {
-		for _, am := range thisMembers {
-			temp := models.GroupMember{
-				GroupID:  group.GroupID,
-				MemberID: am.UserID,
-				Nick:     am.Nick,
-				Inviter:  tokenInfo.GetUserID(), // 增加一个 邀请人 业务会更完整 , 还有进群方式类型等...
-				UserType: int(api.GroupMemberUserEnumType_GroupMemberUserEnumTypeNormal),
-				//UserType: codes.GroupUserTypeNormal,
-			}
-			groupMembers = append(groupMembers, &temp)
-		}
+
+	// 验证 群成员是否有效
+	var checkMemberUserInfo []*models.UserInfoViewer
+
+	findErr := db.Model(&models.UserInfoViewer{}).Where("user_id in ?", req.Members).Find(&checkMemberUserInfo).Error
+
+	if findErr != nil || len(checkMemberUserInfo) == 0 {
+		logger.Error("find checkMemberUserInfo fail", zap.Error(findErr), zap.Int("count", len(checkMemberUserInfo)))
+		err = errors.New("邀请用户错误,稍后重试")
+		return
 	}
-	_ = db.Create(&groupMembers)
-	// TODO 向新用户们推送新聊天事件
-	// 查找所有群成员
-	var allGroupMembers []*models.GroupMember
-	_ = db.Where("group_id = ?", req.GroupID).Find(&allGroupMembers).Error
-	// TODO 向所有成员推送"新人入群"通知
-	if len(allGroupMembers) != 0 {
-		//for _, m := range groupMembers{
-		//}
+
+	// 这里过滤后的群成员和群信息
+
+	//  读取现有的成员信息
+
+	var currentGroupMembers []*models.GroupMember
+
+	findMemberErr = db.Model(&models.GroupMember{}).Where(&models.GroupMember{
+		GroupID: group.GroupID,
+	}).Find(&currentGroupMembers).Error
+	// 正常邀请的群不可能没有人
+	if findMemberErr != nil || len(currentGroupMembers) == 0 {
+		logger.Error("群成员信息错误", zap.Error(findMemberErr))
+		err = errors.New("群信息异常")
+		// todo  后期需要清理服务
+		return
 	}
+
+	// 这里就应该是没问题的了 , 具体操作业务要开个任务处理复杂的流程
+
+	go runGroupMemberInviteProc(p, tokenInfo, group, currentGroupMembers, checkMemberUserInfo)
+
 	resp = new(api.BaseOk)
+
 	return
+}
+
+// 这是耗时的操作
+func runGroupMemberInviteProc(p *PimServer, tokenInfo TokenInfo, group models.GroupBaseInfo, currentGroupMembers []*models.GroupMember, checkMemberUserInfo []*models.UserInfoViewer) {
+
+	// 批量推送消息 循环推送
+	// 参照微信 , 先入的能够收到后面的消息
+
+	// 协议个推送的方法
+	pushMessageFunc := func(groupInfo *models.GroupMember, msg *api.Message) {
+		//
+		//生成群信息
+
+		newGroupEvent := &api.UpdateGroupNewMemberDataType{
+			UpdatedAt: groupInfo.UpdatedAt,
+			//MemberNick: groupInfo.Nick,
+			InvitedBy: tokenInfo.GetUserID(),
+			MemberID:  groupInfo.MemberID,
+			MessageID: msg.ID,
+		}
+
+		groupNewEventBody, _ := anypb.New(newGroupEvent)
+
+		groupNewEvent := &api.UpdateEventDataType{
+			Type: api.UpdateEventDataType_UpdateGroupNewMember,
+			Body: groupNewEventBody,
+		}
+
+		for _, member := range currentGroupMembers {
+			// 找到成员的 客户端
+
+			findUserClient, isok := p.UserStreamClientMap[member.MemberID]
+
+			if !isok {
+				// 用户不在线
+				continue
+			}
+
+			newMessageEventbBody, _ := anypb.New(msg)
+
+			newMessageEvent := &api.UpdateEventDataType{
+				Type: api.UpdateEventDataType_NewMessage,
+				Body: newMessageEventbBody,
+			}
+
+			// 推送消息
+			findUserClient.PushUserEvent(newMessageEvent)
+			// 先推消息可以减少一次消息的检索 因为成员信息里有个msg id
+			// 先落地 那么本地就有这条数据了 可以先缓存
+
+			// 推送 新成员数据
+			findUserClient.PushUserEvent(groupNewEvent)
+
+		}
+
+	}
+	_ = pushMessageFunc
+
+	// 遍历邀请的用户信息
+	db := p.svr.db
+	logger := p.svr.logger
+	// 用于生成一条需要发送的消息 其中一条是存数据库的
+	genAddMemberMessageToDB := func(userInfo *models.UserInfoViewer) *api.Message {
+		genMsgID := p.GenMsgID()
+
+		newMessage := &models.SingleMessage{
+			MsgID:     genMsgID.Int64(),
+			CreatedAt: genMsgID.Time(),
+			ChatID:    GetChatIDByBaseGroupID(group.GroupID), // 注意 群的规则是 负号
+			Sender:    tokenInfo.GetUserID(),
+			MsgType:   int(api.MessageTypeEnum_MessageTypeNewMember),
+			MsgStatus: int(api.MessageStatusEnum_MessageStatusSend),
+		}
+
+		pushMessage := &api.Message{}
+		pushMessage.Sender = newMessage.Sender
+		pushMessage.ChatID = newMessage.ChatID
+		pushMessage.ID = newMessage.MsgID
+		pushMessage.Type = api.MessageTypeEnum_MessageTypeNewMember
+		pushMessage.Status = api.MessageStatusEnum_MessageStatusSend
+
+		p.svr.saveMessageChan <- newMessage
+		//p.svr.sendMessageChan <- pushMessage
+
+		return pushMessage
+	}
+
+	for _, userViewer := range checkMemberUserInfo {
+		// 	按照顺序生成 消息
+
+		// 生成成员信息
+
+		newMemberInfo := &models.GroupMember{
+			GroupID:  group.GroupID,
+			MemberID: userViewer.UserID,
+			Nick:     userViewer.Nick,
+			Inviter:  tokenInfo.GetUserID(), // 增加一个 邀请人 业务会更完整 , 还有进群方式类型等...
+			UserType: int(api.GroupMemberUserEnumType_GroupMemberUserEnumTypeNormal),
+			//UserType: codes.GroupUserTypeNormal,
+		}
+
+		// 添加到群表
+
+		addGroupErr := db.Create(newMemberInfo).Error
+		if addGroupErr != nil {
+			// 添加失败
+			logger.Error("添加成员信息失败", zap.Error(addGroupErr))
+			continue
+		}
+
+		// 添加成功推送一个 入群事件
+
+		pushMessage := genAddMemberMessageToDB(userViewer)
+
+		// 将消息推送给群里的所有人
+		pushMessageFunc(newMemberInfo, pushMessage)
+		// 推玩就要吧当前用户加到列表
+		// 下一轮则也会推送这个用户的数据
+		currentGroupMembers = append(currentGroupMembers, newMemberInfo)
+
+	}
+}
+func GetChatIDByBaseGroupID(groupID int64) int64 {
+	return 0 - groupID
 }
 
 func (p *PimServer) GroupEditNotification(ctx context.Context, req *api.GroupEditNotificationReq) (resp *api.BaseOk, err error) {
