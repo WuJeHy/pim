@@ -45,7 +45,7 @@ func (p *PimServer) CreateGroup(ctx context.Context, req *api.CreateGroupReq) (r
 		GroupID:  groupBaseInfo.GroupID,
 		MemberID: masterInfo.MemberID,
 		Nick:     masterInfo.Nick,
-		//UserType: codes.GroupUserTypeMaster,
+		UserType: int(api.GroupMemberUserEnumType_GroupMemberUserEnumTypeCreator),
 	}
 	db.Create(groupMasterInfo)
 	p.pushCacheToGroups(groupBaseInfo.GroupID, masterInfo.MemberID)
@@ -65,7 +65,7 @@ func (p *PimServer) CreateGroup(ctx context.Context, req *api.CreateGroupReq) (r
 				GroupID:  groupBaseInfo.GroupID,
 				MemberID: m.MemberID,
 				Nick:     m.Nick,
-				//UserType: codes.GroupUserTypeNormal,
+				UserType: int(api.GroupMemberUserEnumType_GroupMemberUserEnumTypeNormal),
 			}
 			groupMemberList = append(groupMemberList, temp)
 			p.pushCacheToGroups(groupBaseInfo.GroupID, temp.MemberID)
@@ -109,7 +109,7 @@ func (p *PimServer) CreateGroup(ctx context.Context, req *api.CreateGroupReq) (r
 	// 以处理后的成员信息 为准 , 因为有的成员被拉黑之类的 , req.Member 甚至有问题的id
 	// 有的任务屏蔽了信息 所以以处理后的目标成员为准
 	for _, member := range membersInfo {
-		p.UserStreamClientMap.PushUserEvent(member.MemberID, newChatInfoPushedData)
+		go p.UserStreamClientMap.PushUserEvent(member.MemberID, newChatInfoPushedData)
 	}
 
 	p.UserStreamClientMap.PushUserEvent(groupMasterInfo.MemberID, newChatInfoPushedData)
@@ -140,7 +140,7 @@ func (p *PimServer) GroupJoinByID(ctx context.Context, req *api.GroupJoinByIDReq
 		logger.Error("查无此群", zap.Int64("group_id", req.GroupID), zap.Int64("stream_id", req.StreamID))
 		return
 	}
-	// 查找所有群成员
+	// 查找所有群旧成员
 	var oldGroupMembers []*models.GroupMember
 	_ = db.Where("group_id = ?", req.GroupID).Find(&oldGroupMembers).Error
 	// 添加群成员信息
@@ -153,16 +153,39 @@ func (p *PimServer) GroupJoinByID(ctx context.Context, req *api.GroupJoinByIDReq
 	thisGroupMember := models.GroupMember{
 		GroupID:  group.GroupID,
 		MemberID: this.UserID,
-		//UserType: codes.GroupUserTypeNormal,
-		Nick: this.Nick,
+		Nick:     this.Nick,
+		UserType: int(api.GroupMemberUserEnumType_GroupMemberUserEnumTypeNormal),
 	}
 	db.Create(&thisGroupMember)
 
-	// TODO 向所有成员推送"新人入群"通知
-	if len(oldGroupMembers) != 0 {
-	}
+	// TODO 向所有旧成员推送"新人入群"通知
+	//if len(oldGroupMembers) != 0 {
+	//	for _, m:= range oldGroupMembers{
+	//		p.UserStreamClientMap.PushUserEvent(m.MemberID, )
+	//	}
+	//}
 	// TODO 推送当前用户新聊天事件
+	chatInfo := &api.ChatInfoDataType{
+		ChatName:       group.Name,
+		ChatTitle:      group.Name,
+		ChatId:         group.GroupID,
+		MyUserId:       thisGroupMember.MemberID,
+		LastUpdateTime: time.Now().Unix(),
+		//LastMsgId: ,
+	}
+
+	newChatInfoDataType := api.NewChatInfoDataType{
+		ChatInfo: chatInfo,
+	}
+
+	newChatInfoBody, _ := anypb.New(&newChatInfoDataType)
+	newChatInfoPushedData := &api.UpdateEventDataType{
+		Type: api.UpdateEventDataType_NewChatInfo,
+		Body: newChatInfoBody,
+	}
+	p.UserStreamClientMap.PushUserEvent(thisGroupMember.MemberID, newChatInfoPushedData)
 	resp = new(api.BaseOk)
+	// TODO 处理缓存
 	return
 }
 
@@ -177,7 +200,6 @@ func (p *PimServer) GroupInviteMembers(ctx context.Context, req *api.GroupInvite
 	// 用户信息的使用
 	_ = tokenInfo
 	// 鉴权成功
-	// 基本类似GroupJoinByID
 	db := p.svr.db
 	logger := p.svr.logger
 	// 查找群
@@ -195,8 +217,17 @@ func (p *PimServer) GroupInviteMembers(ctx context.Context, req *api.GroupInvite
 		logger.Error("添加群成员信息失败", zap.Int64("group_id", req.GroupID), zap.Int64("stream_id", req.StreamID))
 		return
 	}
+	// TODO 向新用户们推送新聊天事件
 	var groupMembers []*models.GroupMember
 	if len(thisMembers) != 0 {
+		tempChatInfo := &api.ChatInfoDataType{
+			ChatName:  group.Name,
+			ChatTitle: group.Name,
+			ChatId:    group.GroupID,
+			//MyUserId:       thisGroupMember.MemberID,
+			LastUpdateTime: time.Now().Unix(),
+			//LastMsgId: ,
+		}
 		for _, am := range thisMembers {
 			temp := models.GroupMember{
 				GroupID:  group.GroupID,
@@ -204,17 +235,26 @@ func (p *PimServer) GroupInviteMembers(ctx context.Context, req *api.GroupInvite
 				Nick:     am.Nick,
 				Inviter:  tokenInfo.GetUserID(), // 增加一个 邀请人 业务会更完整 , 还有进群方式类型等...
 				UserType: int(api.GroupMemberUserEnumType_GroupMemberUserEnumTypeNormal),
-				//UserType: codes.GroupUserTypeNormal,
 			}
 			groupMembers = append(groupMembers, &temp)
+
+			tempChatInfo.MyUserId = am.UserID
+			tempNewChatInfoDataType := api.NewChatInfoDataType{
+				ChatInfo: tempChatInfo,
+			}
+			tempNewChatInfoBody, _ := anypb.New(&tempNewChatInfoDataType)
+			tempNewChatInfoPushedData := &api.UpdateEventDataType{
+				Type: api.UpdateEventDataType_NewChatInfo,
+				Body: tempNewChatInfoBody,
+			}
+			p.UserStreamClientMap.PushUserEvent(am.UserID, tempNewChatInfoPushedData)
 		}
 	}
 	_ = db.Create(&groupMembers)
-	// TODO 向新用户们推送新聊天事件
-	// 查找所有群成员
+
+	// TODO 向所有旧成员推送"新人入群"通知
 	var allGroupMembers []*models.GroupMember
 	_ = db.Where("group_id = ?", req.GroupID).Find(&allGroupMembers).Error
-	// TODO 向所有成员推送"新人入群"通知
 	if len(allGroupMembers) != 0 {
 		//for _, m := range groupMembers{
 		//}
@@ -238,11 +278,23 @@ func (p *PimServer) GroupEditNotification(ctx context.Context, req *api.GroupEdi
 	// 否，return
 	var thisUserInfoViewer models.UserInfoViewer
 	_ = db.Where("user_id = ?", p.clients[req.StreamID].UserID).Take(&thisUserInfoViewer).Error
-	//if thisUserInfoViewer.UserType == codes.GroupUserTypeNormal
-	if thisUserInfoViewer.UserType == 0 {
+	if thisUserInfoViewer.UserType == int(api.GroupMemberUserEnumType_GroupMemberUserEnumTypeNormal) {
 		logger.Info("用户无权限增加群通知", zap.Int64("user_id", thisUserInfoViewer.UserID))
 		return
 	}
+	// 获取当前群
+	group := models.GroupBaseInfo{
+		GroupID: req.GroupID,
+	}
+	err = db.Model(&models.GroupBaseInfo{}).Take(&group).Error
+	if err != nil {
+
+	}
+	// 创建通知
+	groupNotification := models.GroupNotification{
+		GroupID: group.GroupID,
+	}
+	db.Create(&groupNotification)
 	// 向所有用户推送通知
 	var allGroupMembers []*models.GroupMember
 	_ = db.Where("group_id = ?", req.GroupID).Find(&allGroupMembers).Error
@@ -290,6 +342,7 @@ func (p *PimServer) GroupRemoveMembers(ctx context.Context, req *api.GroupRemove
 	//	}
 	//}
 	//_ = db.Delete(&deletedGroupMembers).Error
+	db.Where("user_id in ? ", req.Members).Delete(&models.GroupMember{})
 	// 删除群成员对应缓存
 	// 向被删除的成员推送"已被移出群聊信息"
 	resp = new(api.BaseOk)

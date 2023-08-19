@@ -34,3 +34,18 @@ type GroupMember struct {
 func (g GroupMember) TableName() string {
 	return "group_members"
 }
+
+type GroupNotification struct {
+	//NotificationID int64  `json:"notification_id" gorm:"primarykey;comment:基础id"`
+	GroupID   int64  `json:"group_id" gorm:"comment:群id"`
+	Content   string `json:"content" gorm:"comment:公告内容"`
+	CreatedBy int64  `json:"created_by" gorm:"comment:创建人ID"`
+	CreatedAt int64  `json:"created_at" gorm:"autoCreateTime:milli"`
+	UpdatedAt int64  `json:"-" gorm:"autoUpdateTime:milli"`
+	DeleteAt  int64  `json:"-" `
+	Nick      string `json:"nick" gorm:"comment:创建人昵称" ` //入群时的用户信息
+}
+
+func (g GroupNotification) TableName() string {
+	return "group_notifications"
+}
