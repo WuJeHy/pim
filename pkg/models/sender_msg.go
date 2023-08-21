@@ -33,6 +33,7 @@ const (
 	SenderMsgStateFail    = 4
 )
 
+// SingleMessage 是丢给数据库的
 type SingleMessage struct {
 	MsgID            int64          `form:"msg_id" json:"msg_id" gorm:"type:bigint;primarykey;comment:基础id"` // 基础id 10 位数 1000000000 开始
 	CreatedAt        int64          `json:"created_at" gorm:"autoCreateTime:milli"`

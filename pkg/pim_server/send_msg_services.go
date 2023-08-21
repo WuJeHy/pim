@@ -25,6 +25,14 @@ func (s *server) StartSenderMessageEventService() {
 			if targetChatType == 0x010000000000 {
 				// 普通群 -- 200 人以下规模 私有
 
+				// 获取群ID
+				// 获取
+				// 修改信息状态
+				// 生成Message的数据报（Any）
+				// 耗时操作（向群成员分发）
+				// 获取所有群成员
+				// go for分发
+
 			} else if targetChatType == 0x100000000000 {
 				// 超级群 -- 100000 人规模 公开
 

@@ -42,6 +42,8 @@ service PimServer {
   rpc GroupEditNotification(GroupEditNotificationReq) returns(BaseOk);
   //  移除群成员
   rpc GroupRemoveMembers(GroupRemoveMembersReq) returns (BaseOk);
+  // 创建群聊天信息
+  rpc CreateGroupChat(GroupChatReq) returns (BaseOk);
 
 }
 //=============================服务区域 End ==================================
@@ -309,6 +311,8 @@ message MessageTypeImage {
   bytes ImageBuffer = 1 ; // 先只有buffer
 }
 
+
+// Message类型：文本消息、新成员消息、移除成员消息...
 enum MessageTypeEnum {
   MessageTypeUnknown = 0 ; // proto3 必须从0开始
   MessageTypeText = 1 ;
@@ -323,6 +327,8 @@ enum MessageTypeEnum {
 //	SenderMsgStateAck     = 2
 //	SenderMsgStateSuccess = 3
 //	SenderMsgStateFail    = 4
+
+// Message状态：待发送状态、发送接收状态、发送成功状态、发送失败状态...
 enum MessageStatusEnum {
   MessageStatusUnknown = 0 ;
   MessageStatusSend = 1 ;
@@ -330,6 +336,7 @@ enum MessageStatusEnum {
   MessageStatusSuccess = 3 ;
   MessageStatusFail = 4 ;
 }
+
 // 消息数据类型
 message Message {
   int64 ID = 1 ;
@@ -398,6 +405,13 @@ message UserUpdateInfoReq {
   optional string Username = 2 ;
   optional string Nick = 3 ;
   optional bytes Avatar = 4 ;
+}
+
+message GroupChatReq{
+  int64 StreamID = 1; // 这是必须的
+  int64 GroupID = 2 ;
+  repeated int64 Members = 3 ;
+  string Message = 4;
 }
 
 //=========================== 普通接口定义去 End =========================================

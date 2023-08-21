@@ -51,20 +51,16 @@ func (d *Dao) DeleteUserInfoCache(userID int64) error {
 	return nil
 }
 
-func GetChatInfoCacheValue(d *Dao, key string) (info *api.ChatInfoDataType, err error) {
-	// 同时更新有效期
-	cacheValue, err := d.GetCacheKey(key, true)
+func (d *Dao) GetUserInfoByID(userid int64) (info *models.UserInfoViewer, err error) {
+	//TODO implement me
+	//panic("implement me")
+	db := d.db
 
-	if err != nil {
-		return
-	}
-
-	switch value := cacheValue.(type) {
-	case *api.ChatInfoDataType:
-		return value, nil
-	default:
-		return nil, errors.New("缓存的类型对不上")
-	}
+	info = new(models.UserInfoViewer)
+	err = db.Model(&models.UserInfoViewer{}).Where(&models.UserInfoViewer{
+		UserID: userid,
+	}).Find(info).Error
+	return
 }
 
 // GetChatInfoByID 获取与某人的聊天记录（这个是指A是否与B聊过天）
@@ -174,6 +170,32 @@ func (d *Dao) GetChatInfoByID(myUserID int64, chatID int64) (info *api.ChatInfoD
 	return
 }
 
+// QueryAllByGroupID 通过群ID获取所有成员
+func (d *Dao) QueryAllByGroupID(groupID int64) (ms []*models.GroupMember, err error) {
+	// TODO implements
+}
+
+// QueryAllSpecificByGroupID 通过群ID获取指定用户ID的所有成员
+func (d *Dao) QueryAllSpecificByGroupID(groupID int64, members []int64) (ms []*models.GroupMember, err error) {
+	// TODO implements
+}
+
+func GetChatInfoCacheValue(d *Dao, key string) (info *api.ChatInfoDataType, err error) {
+	// 同时更新有效期
+	cacheValue, err := d.GetCacheKey(key, true)
+
+	if err != nil {
+		return
+	}
+
+	switch value := cacheValue.(type) {
+	case *api.ChatInfoDataType:
+		return value, nil
+	default:
+		return nil, errors.New("缓存的类型对不上")
+	}
+}
+
 func (d *Dao) GetCacheKey(key string, update ...bool) (interface{}, error) {
 	//TODO implement me
 	//panic("implement me")
@@ -214,18 +236,6 @@ func (d *Dao) AutoClearService() {
 		}
 	}
 
-}
-
-func (d *Dao) GetUserInfoByID(userid int64) (info *models.UserInfoViewer, err error) {
-	//TODO implement me
-	//panic("implement me")
-	db := d.db
-
-	info = new(models.UserInfoViewer)
-	err = db.Model(&models.UserInfoViewer{}).Where(&models.UserInfoViewer{
-		UserID: userid,
-	}).Find(info).Error
-	return
 }
 
 func (d *Dao) DoClearKey(timeNow time.Time) {
@@ -279,7 +289,15 @@ type UserDao interface {
 	DeleteUserInfoCache(userID int64) error
 }
 
+type GroupDao interface {
+	// QueryAllByGroupID 通过群ID获取所有成员
+	QueryAllByGroupID(groupID int64) ([]*models.GroupMember, error)
+	// QueryAllSpecificByGroupID 通过群ID获取指定用户ID的所有成员
+	QueryAllSpecificByGroupID(groupID int64, members []int64) ([]*models.GroupMember, error)
+}
+
 type APIDao interface {
 	UserDao
+	GroupDao
 	SystemControlDao
 }

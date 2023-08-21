@@ -86,70 +86,6 @@ func (p *PimServer) CreateGroup(ctx context.Context, req *api.CreateGroupReq) (r
 			GroupID: groupBaseInfo.GroupID,
 		}, nil
 	}
-
-	//if len(membersInfo) != 0 {
-	//	var groupMemberList []*models.GroupMember
-	//	//updateGroupNewMemberDataTypeModel := api.UpdateGroupNewMemberDataType{
-	//	//	UpdatedAt: groupCreatedTime,
-	//	//	//InvitedBy: groupMasterInfo.Nick,
-	//	//}
-	//
-	//	for _, m := range membersInfo {
-	//		temp := &models.GroupMember{
-	//			GroupID:  groupBaseInfo.GroupID,
-	//			MemberID: m.MemberID,
-	//			Nick:     m.Nick,
-	//			Inviter:  tokenInfo.GetUserID(),
-	//			//UserType: codes.GroupUserTypeNormal,
-	//		}
-	//		groupMemberList = append(groupMemberList, temp)
-	//		p.pushCacheToGroups(groupBaseInfo.GroupID, temp.MemberID)
-	//
-	//		//updateGroupNewMemberDataTypeModel.MemberNick = temp.Nick
-	//		updateGroupNewMemberBody, _ := anypb.New(&updateGroupNewMemberDataTypeModel)
-	//		updateGroupNewMemberPushedData := &api.UpdateEventDataType{
-	//			Type: api.UpdateEventDataType_UpdateGroupNewMember,
-	//			Body: updateGroupNewMemberBody,
-	//		}
-	//		p.UserStreamClientMap.PushUserEvent(temp.MemberID, updateGroupNewMemberPushedData)
-	//		p.UserStreamClientMap.PushUserEvent(groupMasterInfo.MemberID, updateGroupNewMemberPushedData)
-	//	}
-	//	db.Create(groupMemberList)
-	//
-	//}
-
-	//
-	//resp = new(api.CreateGroupResp)
-	//// TODO 向群成员推送新聊天事件
-	//chatInfo := &api.ChatInfoDataType{
-	//	ChatName:       groupBaseInfo.Name,
-	//	ChatTitle:      groupBaseInfo.Name,
-	//	ChatId:         groupBaseInfo.GroupID,
-	//	LastUpdateTime: groupCreatedTime,
-	//}
-	//
-	//newChatInfoDataType := api.NewChatInfoDataType{
-	//	ChatInfo: chatInfo,
-	//}
-	//
-	//newChatInfoBody, _ := anypb.New(&newChatInfoDataType)
-	//newChatInfoPushedData := &api.UpdateEventDataType{
-	//	Type: api.UpdateEventDataType_NewChatInfo,
-	//	Body: newChatInfoBody,
-	//}
-	//
-	//// NOTE 这里有bug , member 入参的时候无法确定合法性 ,
-	////for _, m := range req.Members {
-	////	p.UserStreamClientMap.PushUserEvent(m, newChatInfoPushedData)
-	////}
-	////
-	//// 以处理后的成员信息 为准 , 因为有的成员被拉黑之类的 , req.Member 甚至有问题的id
-	//// 有的任务屏蔽了信息 所以以处理后的目标成员为准
-	//for _, member := range membersInfo {
-	//	p.UserStreamClientMap.PushUserEvent(member.MemberID, newChatInfoPushedData)
-	//}
-	//
-	//p.UserStreamClientMap.PushUserEvent(groupMasterInfo.MemberID, newChatInfoPushedData)
 	// TODO 向群成员推送"欢迎加入"事件
 	//body := api
 
@@ -160,13 +96,6 @@ func (p *PimServer) CreateGroup(ctx context.Context, req *api.CreateGroupReq) (r
 	// 业务逻辑同邀请相同 ,邀请人群主而已
 
 	go runGroupMemberInviteProc(p, tokenInfo, groupBaseInfo, currentMembers, memberUserInfos)
-
-	//for _, info := range memberUserInfos {
-	//	推送
-	//
-
-	//
-	//}
 
 	resp = new(api.CreateGroupResp)
 	resp.GroupID = groupBaseInfo.GroupID
@@ -411,125 +340,7 @@ func (p *PimServer) GroupInviteMembers(ctx context.Context, req *api.GroupInvite
 	return
 }
 
-// 向群成员推送消息的方法
-func pushGroupMemberMessageFunc(p *PimServer, currentGroupMembers []*models.GroupMember, msg *api.Message) {
-
-	// 这样就可以少推送一条消息
-	for _, member := range currentGroupMembers {
-		// 找到成员的 客户端
-
-		findUserClient, isok := p.UserStreamClientMap[member.MemberID]
-
-		if !isok {
-			// 用户不在线
-			continue
-		}
-
-		newMessageEventbBody, _ := anypb.New(msg)
-
-		newMessageEvent := &api.UpdateEventDataType{
-			Type: api.UpdateEventDataType_NewMessage,
-			Body: newMessageEventbBody,
-		}
-
-		// 推送消息
-		findUserClient.PushUserEvent(newMessageEvent)
-		// 先推消息可以减少一次消息的检索 因为成员信息里有个msg id
-		// 先落地 那么本地就有这条数据了 可以先缓存
-
-		// 推送 新成员数据
-		//findUserClient.PushUserEvent(groupNewEvent)
-
-	}
-
-}
-
-// 可以复用 提取出来
-func genMessageAddMemberMessageToDB(p *PimServer, tokenInfo TokenInfo, group models.GroupBaseInfo, groupInfo *api.UpdateGroupNewMemberDataType) *api.Message {
-	genMsgID := p.GenMsgID()
-	newMessage := &models.SingleMessage{
-		MsgID:     genMsgID.Int64(),
-		CreatedAt: genMsgID.Time(),
-		ChatID:    GetChatIDByBaseGroupID(group.GroupID), // 注意 群的规则是 负号
-		Sender:    tokenInfo.GetUserID(),
-		MsgType:   int(api.MessageTypeEnum_MessageTypeNewMember),
-		MsgStatus: int(api.MessageStatusEnum_MessageStatusSend),
-	}
-
-	groupInfo.MessageID = newMessage.MsgID
-	paramsData, _ := anypb.New(groupInfo)
-
-	newMessage.Params, _ = json.Marshal(paramsData)
-
-	pushMessage := &api.Message{}
-	pushMessage.Sender = newMessage.Sender
-	pushMessage.ChatID = newMessage.ChatID
-	pushMessage.ID = newMessage.MsgID
-	pushMessage.Type = api.MessageTypeEnum_MessageTypeNewMember
-	pushMessage.Status = api.MessageStatusEnum_MessageStatusSend
-	pushMessage.Params = paramsData
-
-	p.svr.saveMessageChan <- newMessage
-	//p.svr.sendMessageChan <- pushMessage
-
-	return pushMessage
-}
-
-// 这是耗时的操作
-func runGroupMemberInviteProc(p *PimServer, tokenInfo TokenInfo, group models.GroupBaseInfo, currentGroupMembers []*models.GroupMember, checkMemberUserInfo []*models.UserInfoViewer) {
-
-	// 批量推送消息 循环推送
-	// 参照微信 , 先入的能够收到后面的消息
-
-	// 协议个推送的方法
-
-	// 遍历邀请的用户信息
-	db := p.svr.db
-	logger := p.svr.logger
-	// 用于生成一条需要发送的消息 其中一条是存数据库的
-
-	for _, userViewer := range checkMemberUserInfo {
-		// 	按照顺序生成 消息
-
-		// 生成成员信息
-
-		newMemberInfo := &models.GroupMember{
-			GroupID:  group.GroupID,
-			MemberID: userViewer.UserID,
-			Nick:     userViewer.Nick,
-			Inviter:  tokenInfo.GetUserID(), // 增加一个 邀请人 业务会更完整 , 还有进群方式类型等...
-			UserType: int(api.GroupMemberUserEnumType_GroupMemberUserEnumTypeNormal),
-			//UserType: codes.GroupUserTypeNormal,
-		}
-
-		// 添加到群表
-
-		addGroupErr := db.Create(newMemberInfo).Error
-		if addGroupErr != nil {
-			// 添加失败
-			logger.Error("添加成员信息失败", zap.Error(addGroupErr))
-			continue
-		}
-
-		// 添加成功推送一个 入群事件
-		newGroupEvent := &api.UpdateGroupNewMemberDataType{
-			UpdatedAt: newMemberInfo.UpdatedAt,
-			//MemberNick: groupInfo.Nick,
-			InvitedBy: tokenInfo.GetUserID(),
-			MemberID:  newMemberInfo.MemberID,
-			//MessageID: msg.ID,
-		}
-
-		pushMessage := genMessageAddMemberMessageToDB(p, tokenInfo, group, newGroupEvent)
-
-		// 将消息推送给群里的所有人
-		pushGroupMemberMessageFunc(p, currentGroupMembers, pushMessage)
-		// 推玩就要吧当前用户加到列表
-		// 下一轮则也会推送这个用户的数据
-		currentGroupMembers = append(currentGroupMembers, newMemberInfo)
-
-	}
-}
+// GetChatIDByBaseGroupID 生成群ID（规则是群ID的负数）
 func GetChatIDByBaseGroupID(groupID int64) int64 {
 	return 0 - groupID
 }
@@ -756,14 +567,13 @@ func (p *PimServer) GroupRemoveMembers(ctx context.Context, req *api.GroupRemove
 
 	// 查找剩余的成员
 
-	var findOtherMemebrs []*models.GroupMember
+	var findOtherMembers []*models.GroupMember
 
 	findErr = db.Model(&models.GroupMember{}).Where(&models.GroupMember{
 		GroupID: req.GroupID,
-	}).Find(&findOtherMemebrs).Error
+	}).Find(&findOtherMembers).Error
 
 	if findErr != nil {
-
 		err = errors.New("查询成员失败, 请重试")
 		return
 	}
@@ -807,10 +617,128 @@ func (p *PimServer) GroupRemoveMembers(ctx context.Context, req *api.GroupRemove
 	return
 }
 
+// 向群成员推送消息的方法
+func pushGroupMemberMessageFunc(p *PimServer, currentGroupMembers []*models.GroupMember, msg *api.Message) {
+
+	// 这样就可以少推送一条消息
+	for _, member := range currentGroupMembers {
+		// 找到成员的 客户端
+
+		findUserClient, isok := p.UserStreamClientMap[member.MemberID]
+
+		if !isok {
+			// 用户不在线
+			continue
+		}
+
+		newMessageEventbBody, _ := anypb.New(msg)
+
+		newMessageEvent := &api.UpdateEventDataType{
+			Type: api.UpdateEventDataType_NewMessage,
+			Body: newMessageEventbBody,
+		}
+
+		// 推送消息
+		findUserClient.PushUserEvent(newMessageEvent)
+		// 先推消息可以减少一次消息的检索 因为成员信息里有个msg id
+		// 先落地 那么本地就有这条数据了 可以先缓存
+
+		// 推送 新成员数据
+		//findUserClient.PushUserEvent(groupNewEvent)
+
+	}
+
+}
+
+// 生成Message并保存到数据库
+func genMessageAddMemberMessageToDB(p *PimServer, tokenInfo TokenInfo, group models.GroupBaseInfo, groupInfo *api.UpdateGroupNewMemberDataType) *api.Message {
+	genMsgID := p.GenMsgID()
+	newMessage := &models.SingleMessage{
+		MsgID:     genMsgID.Int64(),
+		CreatedAt: genMsgID.Time(),
+		ChatID:    GetChatIDByBaseGroupID(group.GroupID), // 注意 群的规则是 负号
+		Sender:    tokenInfo.GetUserID(),
+		MsgType:   int(api.MessageTypeEnum_MessageTypeNewMember),
+		MsgStatus: int(api.MessageStatusEnum_MessageStatusSend),
+	}
+
+	// 顺便把msgID给改了
+	groupInfo.MessageID = newMessage.MsgID
+	paramsData, _ := anypb.New(groupInfo)
+
+	newMessage.Params, _ = json.Marshal(paramsData)
+
+	pushMessage := &api.Message{}
+	pushMessage.Sender = newMessage.Sender
+	pushMessage.ChatID = newMessage.ChatID
+	pushMessage.ID = newMessage.MsgID
+	pushMessage.Type = api.MessageTypeEnum_MessageTypeNewMember
+	pushMessage.Status = api.MessageStatusEnum_MessageStatusSend
+	pushMessage.Params = paramsData
+
+	// saveMessageChan就是丢数据库里
+	p.svr.saveMessageChan <- newMessage
+	//p.svr.sendMessageChan <- pushMessage
+
+	return pushMessage
+}
+
+// 这是耗时的操作
+func runGroupMemberInviteProc(p *PimServer, tokenInfo TokenInfo, group models.GroupBaseInfo, currentGroupMembers []*models.GroupMember, checkMemberUserInfo []*models.UserInfoViewer) {
+
+	// 批量推送消息 循环推送
+	// 参照微信 , 先入的能够收到后面的消息
+
+	// 协议个推送的方法
+
+	// 遍历邀请的用户信息
+	db := p.svr.db
+	logger := p.svr.logger
+	// 用于生成一条需要发送的消息 其中一条是存数据库的
+
+	for _, userViewer := range checkMemberUserInfo {
+		// 	按照顺序生成 消息
+
+		// 生成成员信息
+
+		newMemberInfo := &models.GroupMember{
+			GroupID:  group.GroupID,
+			MemberID: userViewer.UserID,
+			Nick:     userViewer.Nick,
+			Inviter:  tokenInfo.GetUserID(), // 增加一个 邀请人 业务会更完整 , 还有进群方式类型等...
+			UserType: int(api.GroupMemberUserEnumType_GroupMemberUserEnumTypeNormal),
+		}
+
+		// 添加到群表
+		addGroupErr := db.Create(newMemberInfo).Error
+		if addGroupErr != nil {
+			// 添加失败
+			logger.Error("添加成员信息失败", zap.Error(addGroupErr))
+			continue
+		}
+
+		// 添加成功推送一个 入群事件
+		newGroupEvent := &api.UpdateGroupNewMemberDataType{
+			UpdatedAt: newMemberInfo.UpdatedAt,
+			InvitedBy: tokenInfo.GetUserID(),
+			MemberID:  newMemberInfo.MemberID,
+		}
+
+		pushMessage := genMessageAddMemberMessageToDB(p, tokenInfo, group, newGroupEvent)
+
+		// 将消息推送给群里的所有人
+		pushGroupMemberMessageFunc(p, currentGroupMembers, pushMessage)
+		// 推玩就要吧当前用户加到列表
+		// 下一轮则也会推送这个用户的数据
+		currentGroupMembers = append(currentGroupMembers, newMemberInfo)
+
+	}
+}
+
 type SimpleGroupMembersStruct []int64
 
 // groupID ->
-type GroupCache map[int64]SimpleGroupMembersStruct
+type GroupsCache map[int64]SimpleGroupMembersStruct
 
 // 缓存群成员，不用每次都找
 // 可是如果每个用户都被缓存在内存可能空间不够
