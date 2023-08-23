@@ -735,10 +735,26 @@ func runGroupMemberInviteProc(p *PimServer, tokenInfo TokenInfo, group models.Gr
 	}
 }
 
-type SimpleGroupMembersStruct []int64
+// GroupsCache groupID -> userID -> groupMember
+type GroupsCache map[int64]*SingleGroupCache
+type SingleGroupCache map[int64]*models.GroupMember
 
-// groupID ->
-type GroupsCache map[int64]SimpleGroupMembersStruct
+func (g GroupsCache) PushEventToGroup(p *PimServer, groupID int64, event *api.UpdateEventDataType) (single *SingleGroupCache, err error) {
+	// TODO implements
+	group, has := g[groupID]
+	if has {
+		group.PushEventsToEveryone(p, event)
+	}
+	return
+}
+
+func (s SingleGroupCache) PushEventsToEveryone(p *PimServer, event *api.UpdateEventDataType) {
+	// TODO implements
+	for _, member := range s {
+		p.UserStreamClientMap.PushUserEvent(member.MemberID, event)
+	}
+	return
+}
 
 // 缓存群成员，不用每次都找
 // 可是如果每个用户都被缓存在内存可能空间不够

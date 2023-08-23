@@ -173,11 +173,38 @@ func (d *Dao) GetChatInfoByID(myUserID int64, chatID int64) (info *api.ChatInfoD
 // QueryAllByGroupID 通过群ID获取所有成员
 func (d *Dao) QueryAllByGroupID(groupID int64) (ms []*models.GroupMember, err error) {
 	// TODO implements
+	// 检查groupID合法性
+	if groupID >= 0 {
+		err = errors.New("GroupID is illegal")
+		return
+	}
+	// 从数据库获取群成员
+	err = d.db.Where(&models.GroupMember{GroupID: groupID}).Find(&ms).Error
+	if ms != nil && len(ms) != 0 {
+		rkey := fmt.Sprintf("%s:%X", "GROUPS", groupID)
+		d.AddValue(rkey, &ms)
+	}
+	return
 }
 
-// QueryAllSpecificByGroupID 通过群ID获取指定用户ID的所有成员
+// QueryAllSpecificByGroupID 通过群ID获取指定用户ID的所有成员（貌似没啥用）
 func (d *Dao) QueryAllSpecificByGroupID(groupID int64, members []int64) (ms []*models.GroupMember, err error) {
 	// TODO implements
+	// 检查groupID合法性
+	if groupID >= 0 {
+		err = errors.New("GroupID is illegal")
+		return
+	}
+	if len(members) == 0 {
+		return
+	}
+	// 从数据库获取群成员
+	err = d.db.Where("group_id = ? and member_id in ? ", groupID, members).Find(&ms).Error
+	if ms != nil && len(ms) != 0 {
+		rkey := fmt.Sprintf("%s:%X", "GROUPS", groupID)
+		d.AddValue(rkey, &ms)
+	}
+	return
 }
 
 func GetChatInfoCacheValue(d *Dao, key string) (info *api.ChatInfoDataType, err error) {
