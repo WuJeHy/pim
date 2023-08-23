@@ -97,6 +97,9 @@ func (p *PimServer) CreateGroup(ctx context.Context, req *api.CreateGroupReq) (r
 
 	go runGroupMemberInviteProc(p, tokenInfo, groupBaseInfo, currentMembers, memberUserInfos)
 
+	// TODO 耗时操作（加入GroupsCache缓存）
+	go addGroupToCache(p, groupBaseInfo.GroupID)
+
 	resp = new(api.CreateGroupResp)
 	resp.GroupID = groupBaseInfo.GroupID
 	// NOTE 这里也没有返回 群id 客户端没办法处理这个接口
@@ -117,8 +120,8 @@ func (p *PimServer) GroupJoinByID(ctx context.Context, req *api.GroupJoinByIDReq
 	db := p.svr.db
 	logger := p.svr.logger
 	// 查找群
-	var group models.GroupBaseInfo
-	err = db.Where("group_id = ?", req.GroupID).Take(&group).Error
+	var groupBaseInfo models.GroupBaseInfo
+	err = db.Where("group_id = ?", req.GroupID).Take(&groupBaseInfo).Error
 	// 失败，return
 	if err != nil {
 		logger.Error("查无此群", zap.Int64("group_id", req.GroupID), zap.Int64("stream_id", req.StreamID))
@@ -139,7 +142,7 @@ func (p *PimServer) GroupJoinByID(ctx context.Context, req *api.GroupJoinByIDReq
 	//	return
 	//}
 	//thisGroupMember := models.GroupMember{
-	//	GroupID:  group.GroupID,
+	//	GroupID:  groupBaseInfo.GroupID,
 	//	MemberID: this.UserID,
 	//	//UserType: codes.GroupUserTypeNormal,
 	//	Nick: this.Nick,
@@ -159,7 +162,7 @@ func (p *PimServer) GroupJoinByID(ctx context.Context, req *api.GroupJoinByIDReq
 	var inviterInfoByGroup models.GroupMember
 
 	findMemberErr := db.Model(&inviterInfoByGroup).Where(&models.GroupMember{
-		GroupID:  group.GroupID,
+		GroupID:  groupBaseInfo.GroupID,
 		MemberID: tokenInfo.GetUserID(),
 	}).Find(&inviterInfoByGroup).Error
 
@@ -174,7 +177,7 @@ func (p *PimServer) GroupJoinByID(ctx context.Context, req *api.GroupJoinByIDReq
 	var currentGroupMembers []*models.GroupMember
 
 	findMemberErr = db.Model(&models.GroupMember{}).Where(&models.GroupMember{
-		GroupID: group.GroupID,
+		GroupID: groupBaseInfo.GroupID,
 	}).Find(&currentGroupMembers).Error
 	// 正常邀请的群不可能没有人
 	if findMemberErr != nil || len(currentGroupMembers) == 0 {
@@ -194,7 +197,7 @@ func (p *PimServer) GroupJoinByID(ctx context.Context, req *api.GroupJoinByIDReq
 
 	// TODO 群组有权限的还要进行判断
 	thisGroupMember := models.GroupMember{
-		GroupID:  group.GroupID,
+		GroupID:  groupBaseInfo.GroupID,
 		MemberID: currentUserInfo.UserID,
 		//UserType: codes.GroupUserTypeNormal,
 		Nick: currentUserInfo.Nick,
@@ -218,12 +221,14 @@ func (p *PimServer) GroupJoinByID(ctx context.Context, req *api.GroupJoinByIDReq
 			//MessageID: msg.ID,
 		}
 
-		pushMessage := genMessageAddMemberMessageToDB(p, tokenInfo, group, newGroupEvent)
+		pushMessage := genMessageAddMemberMessageToDB(p, tokenInfo, groupBaseInfo, newGroupEvent)
 
 		// 将消息推送给群里的所有人
 		pushGroupMemberMessageFunc(p, currentGroupMembers, pushMessage)
 
 	}()
+	// TODO 耗时操作（加入GroupsCache缓存）
+	go addGroupToCache(p, groupBaseInfo.GroupID)
 
 	resp = new(api.BaseOk)
 	return
@@ -244,8 +249,8 @@ func (p *PimServer) GroupInviteMembers(ctx context.Context, req *api.GroupInvite
 	db := p.svr.db
 	logger := p.svr.logger
 	// 查找群
-	var group models.GroupBaseInfo
-	err = db.Where("group_id = ?", req.GroupID).Take(&group).Error
+	var groupBaseInfo models.GroupBaseInfo
+	err = db.Where("group_id = ?", req.GroupID).Take(&groupBaseInfo).Error
 	// 失败，return
 	if err != nil {
 		logger.Error("查无此群", zap.Int64("group_id", req.GroupID), zap.Int64("stream_id", req.StreamID))
@@ -262,7 +267,7 @@ func (p *PimServer) GroupInviteMembers(ctx context.Context, req *api.GroupInvite
 	//if len(thisMembers) != 0 {
 	//	for _, am := range thisMembers {
 	//		temp := models.GroupMember{
-	//			GroupID:  group.GroupID,
+	//			GroupID:  groupBaseInfo.GroupID,
 	//			MemberID: am.UserID,
 	//			Nick:     am.Nick,
 	//			Inviter:  tokenInfo.GetUserID(), // 增加一个 邀请人 业务会更完整 , 还有进群方式类型等...
@@ -293,7 +298,7 @@ func (p *PimServer) GroupInviteMembers(ctx context.Context, req *api.GroupInvite
 	var inviterInfoByGroup models.GroupMember
 
 	findMemberErr := db.Model(&inviterInfoByGroup).Where(&models.GroupMember{
-		GroupID:  group.GroupID,
+		GroupID:  groupBaseInfo.GroupID,
 		MemberID: tokenInfo.GetUserID(),
 	}).Find(&inviterInfoByGroup).Error
 
@@ -321,7 +326,7 @@ func (p *PimServer) GroupInviteMembers(ctx context.Context, req *api.GroupInvite
 	var currentGroupMembers []*models.GroupMember
 
 	findMemberErr = db.Model(&models.GroupMember{}).Where(&models.GroupMember{
-		GroupID: group.GroupID,
+		GroupID: groupBaseInfo.GroupID,
 	}).Find(&currentGroupMembers).Error
 	// 正常邀请的群不可能没有人
 	if findMemberErr != nil || len(currentGroupMembers) == 0 {
@@ -333,7 +338,10 @@ func (p *PimServer) GroupInviteMembers(ctx context.Context, req *api.GroupInvite
 
 	// 这里就应该是没问题的了 , 具体操作业务要开个任务处理复杂的流程
 
-	go runGroupMemberInviteProc(p, tokenInfo, group, currentGroupMembers, checkMemberUserInfo)
+	go runGroupMemberInviteProc(p, tokenInfo, groupBaseInfo, currentGroupMembers, checkMemberUserInfo)
+
+	// TODO 耗时操作（加入GroupsCache缓存）
+	go addGroupToCache(p, groupBaseInfo.GroupID)
 
 	resp = new(api.BaseOk)
 
@@ -613,6 +621,9 @@ func (p *PimServer) GroupRemoveMembers(ctx context.Context, req *api.GroupRemove
 
 	go pushGroupMemberMessageFunc(p, findDeleteMembers, senderMsg)
 
+	// TODO 耗时操作（加入GroupsCache缓存）
+	go addGroupToCache(p, req.GroupID)
+
 	resp = new(api.BaseOk)
 	return
 }
@@ -735,6 +746,13 @@ func runGroupMemberInviteProc(p *PimServer, tokenInfo TokenInfo, group models.Gr
 	}
 }
 
+func addGroupToCache(p *PimServer, groupID int64) {
+	_, err := p.svr.dao.QueryAllByGroupID(groupID)
+	if err != nil {
+		p.svr.logger.Error("添加群缓存失败", zap.Int64("groupID", groupID))
+	}
+}
+
 // GroupsCache groupID -> userID -> groupMember
 type GroupsCache map[int64]*SingleGroupCache
 type SingleGroupCache map[int64]*models.GroupMember
@@ -754,12 +772,6 @@ func (s SingleGroupCache) PushEventsToEveryone(p *PimServer, event *api.UpdateEv
 		p.UserStreamClientMap.PushUserEvent(member.MemberID, event)
 	}
 	return
-}
-
-// 缓存群成员，不用每次都找
-// 可是如果每个用户都被缓存在内存可能空间不够
-func (p *PimServer) pushCacheToGroups(groupID int64, values ...int64) {
-	p.groups[groupID] = append(p.groups[groupID], values...)
 }
 
 func (p *PimServer) convertStreamIDToUserID(streamID int64) int64 {

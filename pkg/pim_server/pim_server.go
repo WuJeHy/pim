@@ -62,7 +62,7 @@ type PimServer struct {
 	rw      *sync.RWMutex
 	// 使用 用户id 查找流信息
 	UserStreamClientMap UserStreamClientMapType
-	groups              map[int64][]int64
+	GroupsCache         GroupsCache
 }
 
 func SetNodeID() Option {

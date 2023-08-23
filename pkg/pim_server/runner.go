@@ -209,7 +209,7 @@ func SetRpcService(port int) Option {
 			rw:                  new(sync.RWMutex),
 			clients:             make(map[int64]*RpcClient, 128),
 			UserStreamClientMap: make(UserStreamClientMapType, 8),
-			groups:              make(map[int64][]int64, 128),
+			GroupsCache:         make(GroupsCache, 8),
 		}
 
 		svr.grpcd = grpc.NewServer()
