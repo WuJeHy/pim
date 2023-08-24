@@ -1770,7 +1770,7 @@ func (x *MessageTypeImage) GetImageBuffer() []byte {
 	return nil
 }
 
-// 消息数据类型
+// 消息数据类型：这是C/S传递的
 type Message struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

@@ -181,7 +181,7 @@ func (d *Dao) QueryAllByGroupID(groupID int64) (ms []*models.GroupMember, err er
 	}
 	// 从数据库获取群成员
 	err = d.db.Where(&models.GroupMember{GroupID: groupID}).Find(&ms).Error
-	if ms != nil && len(ms) != 0 {
+	if len(ms) != 0 {
 		singleGroup := make(pim_server.SingleGroupCache, 8)
 		for _, m := range ms {
 			singleGroup[m.MemberID] = m
@@ -205,7 +205,7 @@ func (d *Dao) QueryAllSpecificByGroupID(groupID int64, members []int64) (ms []*m
 	}
 	// 从数据库获取群成员
 	err = d.db.Where("group_id = ? and member_id in ? ", groupID, members).Find(&ms).Error
-	if ms != nil && len(ms) != 0 {
+	if len(ms) != 0 {
 		singleGroup := make(pim_server.SingleGroupCache, 8)
 		for _, m := range ms {
 			singleGroup[m.MemberID] = m

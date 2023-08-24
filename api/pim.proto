@@ -320,6 +320,7 @@ enum MessageTypeEnum {
   MessageTypeNewMember = 101 ;
   MessageTypeRemoveMember = 102 ;
   MessageTypeUpdateGroupNotification = 103 ;
+  MessageTypeRemoveGroupNotification = 104;
 
 
 }
@@ -391,8 +392,8 @@ message GroupEditNotificationReq {
   int64 StreamID = 1; // 这是必须的
   int64 GroupID = 2 ;
   string Notification = 3 ;
-
 }
+
 message GroupRemoveMembersReq{
   int64 StreamID = 1; // 这是必须的
   int64 GroupID = 2 ;
@@ -412,6 +413,11 @@ message GroupChatReq{
   int64 GroupID = 2 ;
   repeated int64 Members = 3 ;
   string Message = 4;
+}
+
+message GroupDeleteNotificationReq{
+  int64 StreamID = 1; // 这是必须的
+  int64 GroupID = 2 ;
 }
 
 //=========================== 普通接口定义去 End =========================================
