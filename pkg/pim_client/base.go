@@ -19,10 +19,11 @@ type PimClient struct {
 	clientApi api.PimServerClient
 	logger    *zap.Logger
 	//db        *gorm.DB
-	ctx          context.Context
-	currentToken string
-	sessionFile  string
-	rpcServerUrl string
+	ctx           context.Context
+	currentToken  string
+	sessionFile   string
+	rpcServerUrl  string
+	connectStatus chan bool
 }
 
 func (c *PimClient) CheckLogin() bool {
@@ -141,6 +142,13 @@ func (c *PimClient) doLoginRpc() bool {
 	return true
 }
 
+func NewChatInfoWidget(c *PimClient, ui *BaseUIArea) *MyInfoWidget {
+	return &MyInfoWidget{
+		BasePos: ui,
+		pos:     ui.GetMyInfoPos(),
+		client:  c,
+	}
+}
 func (c *PimClient) Run() bool {
 	// 打开ui
 
@@ -160,9 +168,20 @@ func (c *PimClient) Run() bool {
 	g.Cursor = true
 	g.SelFgColor = gocui.ColorGreen
 
-	g.SetManagerFunc(func(gui *gocui.Gui) error {
-		return layout(c, g)
-	})
+	g.Mouse = true
+	appUI := &BaseUIArea{}
+
+	chatInfoWidget := NewChatInfoWidget(c, appUI)
+	chatListWidget := NewChatListWidget(c, appUI)
+	g.SetManager(appUI, chatInfoWidget, chatListWidget)
+	//g.SetManagerFunc(func(gui *gocui , .Gui) error {
+	//	return layout(c, g)
+	//})
+
+	if err := keyBindings(g, chatInfoWidget, chatListWidget); err != nil {
+		log.Panicln(err)
+	}
+
 	if err := g.SetKeybinding("", gocui.KeyCtrlC, gocui.ModNone, quit); err != nil {
 		log.Panicln(err)
 	}
@@ -170,6 +189,29 @@ func (c *PimClient) Run() bool {
 	if err := g.MainLoop(); err != nil && err != gocui.ErrQuit {
 		log.Panicln(err)
 	}
+
+	return true
+}
+
+type BindKeyFunc interface {
+	Bind(gui *gocui.Gui) error
+}
+
+func keyBindings(g *gocui.Gui, ui ...BindKeyFunc) error {
+	for _, keyFunc := range ui {
+		if err := keyFunc.Bind(g); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (c *PimClient) CheckEvent() bool {
+
+	//tokenReq := &api.TokenReq{
+	//	Token: c.currentToken,
+	//}
+
 	return true
 }
 func quit(g *gocui.Gui, v *gocui.View) error {
@@ -180,7 +222,17 @@ func layout(client *PimClient, g *gocui.Gui) error {
 
 	maxX, maxY := g.Size()
 
-	if v, err := g.SetView("Msg", 0, 0, maxX-1, maxY-5); err != nil {
+	if v, err := g.SetView("Chats", 0, 0, 19, maxY-1); err != nil {
+		if err != gocui.ErrUnknownView {
+			return err
+		}
+		v.Title = "Chats"
+		v.Wrap = true
+		v.Autoscroll = true
+		v.Editable = true
+	}
+
+	if v, err := g.SetView("Msg", 20, 0, maxX-20, maxY-5); err != nil {
 		if err != gocui.ErrUnknownView {
 			return err
 		}
@@ -189,6 +241,13 @@ func layout(client *PimClient, g *gocui.Gui) error {
 		v.Autoscroll = true
 		v.Editable = true
 
+	}
+
+	if v, err := g.SetView("Info", maxX-19, 0, maxX-1, maxY-5); err != nil {
+		if err != gocui.ErrUnknownView {
+			return err
+		}
+		v.Title = "Info"
 	}
 
 	return nil
@@ -205,7 +264,9 @@ func RunClient(rpc string, sessionFile string) {
 		rpcServerUrl: rpc,
 	}
 
-	for i := 0; i < 20; i++ {
+	//ticker := time.NewTicker(time.Second * 5)
+
+	for true {
 
 		if !client.CheckRpc() {
 			fmt.Println("等待链接...")
@@ -221,17 +282,22 @@ func RunClient(rpc string, sessionFile string) {
 			fmt.Println("校验失败")
 			time.Sleep(time.Second * 10)
 			fmt.Println("重试")
-			break
+			continue
 		}
-	}
 
-	for true {
 		if client.Run() {
 			fmt.Println("退出")
 			break
 		}
 		time.Sleep(time.Second * 15)
 		fmt.Println("网络断开,准备重试")
+		//select {
+		//case <-client.connectStatus:
+		//	fmt.Println("网络断开")
+		//	continue
+		//default:
+		//
+		//}
 	}
 
 }
