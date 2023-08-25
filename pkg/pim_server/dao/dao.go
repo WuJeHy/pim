@@ -179,14 +179,37 @@ func (d *Dao) QueryAllByGroupID(groupID int64) (ms []*models.GroupMember, err er
 		err = errors.New("GroupID is illegal")
 		return
 	}
+
+	// TODO wujehy  查询成员需要先 缓存读取 没有再数据库查询
+
+	rkey := fmt.Sprintf("%s:%X", "GROUPS", groupID)
+
+	members, err := d.GetCacheKey(rkey, true)
+	if err != nil {
+
+	} else {
+		// TODO wujehy 注意下面 的存入的值 对应取 不然会有很大的问题
+
+		switch targetValue := members.(type) {
+		case []*models.GroupMember:
+			ms = targetValue
+			err = nil
+			return
+		}
+
+	}
+
+	// TODO  这些抖不符合条件的 需要从数据库缓存
 	// 从数据库获取群成员
 	err = d.db.Where(&models.GroupMember{GroupID: groupID}).Find(&ms).Error
 	if len(ms) != 0 {
-		singleGroup := make(pim_server.SingleGroupCache, 8)
+		// TODO wujehy 知道长度的情况下 分配指定长度的内存mao
+		//singleGroup := make(pim_server.SingleGroupCache, 8)
+		singleGroup := make(pim_server.SingleGroupCache, len(ms))
 		for _, m := range ms {
 			singleGroup[m.MemberID] = m
 		}
-		rkey := fmt.Sprintf("%s:%X", "GROUPS", groupID)
+		// TODO 这里有问题 存入的数据是 *pim_server.SingleGroupCache
 		d.AddValue(rkey, &singleGroup)
 	}
 	return

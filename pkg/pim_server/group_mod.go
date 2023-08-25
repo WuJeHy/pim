@@ -624,80 +624,81 @@ func (p *PimServer) GroupEditNotification(ctx context.Context, req *api.GroupEdi
 	return
 }
 
+// TODO wujehy 这个接口没有必要 删除就是只能推送 一个新的通知
 // 删除群通知
-func (p *PimServer) GroupRemoveNotification(ctx context.Context, req *api.GroupRemoveNotificationReq) (resp *api.BaseOk, err error) {
-	// 鉴权
-	tokenInfo, err := p.CheckAuthByStream(req)
-	if err != nil {
-		return
-	}
-	// 用户信息的使用
-	_ = tokenInfo
-	db := p.svr.db
-	logger := p.svr.logger
-	// 用户是否有权限编辑通知
-	var myInfoByGroup models.GroupMember
-
-	findMemberErr := db.Model(&myInfoByGroup).Where(&models.GroupMember{
-		GroupID:  req.GroupID,
-		MemberID: tokenInfo.GetUserID(),
-	}).Find(&myInfoByGroup).Error
-
-	if findMemberErr != nil || myInfoByGroup.MemberID == 0 || myInfoByGroup.MemberID != tokenInfo.GetUserID() {
-		logger.Info("校验群成员信息失败", zap.Error(findMemberErr))
-		err = errors.New("校验群成员信息失败")
-		return
-	}
-
-	if myInfoByGroup.UserType != int(api.GroupMemberUserEnumType_GroupMemberUserEnumTypeAdmin) {
-		logger.Info("用户无权限增加群通知", zap.Int64("user_id", myInfoByGroup.MemberID))
-
-		err = errors.New("没有权限操作")
-		return
-	}
-
-	// 查找群
-	var group models.GroupBaseInfo
-	err = db.Where("group_id = ?", req.GroupID).Take(&group).Error
-	// 失败，return
-	if err != nil {
-		logger.Error("查无此群", zap.Int64("group_id", req.GroupID), zap.Int64("stream_id", req.StreamID))
-		return
-	}
-	// 向所有用户推送通知
-	// 增加一条消息 到数据库
-
-	// 读取群成员
-	var currentGroupMembers []*models.GroupMember
-
-	findMemberErr = db.Model(&models.GroupMember{}).Where(&models.GroupMember{
-		GroupID: group.GroupID,
-	}).Find(&currentGroupMembers).Error
-	// 正常邀请的群不可能没有人
-	if findMemberErr != nil || len(currentGroupMembers) == 0 {
-		logger.Error("群成员信息错误", zap.Error(findMemberErr))
-		err = errors.New("群信息异常")
-		// todo  后期需要清理服务
-		return
-	}
-
-	// TODO 删除公告
-
-	//genMsgID := p.GenMsgID()
-	//
-	//newNotificationMessage := &models.SingleMessage{
-	//	MsgID:     genMsgID.Int64(),
-	//	CreatedAt: genMsgID.Time(),
-	//	ChatID:    GetChatIDByBaseGroupID(req.GroupID),
-	//	MsgStatus: int(api.MessageStatusEnum_MessageStatusSuccess),
-	//	MsgType:   int(api.MessageTypeEnum_MessageTypeRemoveGroupNotification),
-	//	Text:      req.Notification,
-	//	Sender:    tokenInfo.GetUserID(),
-	//}
-	//
-	//p.svr.saveMessageChan <- newNotificationMessage
-
-}
+//func (p *PimServer) GroupRemoveNotification(ctx context.Context, req *api.GroupRemoveNotificationReq) (resp *api.BaseOk, err error) {
+//	// 鉴权
+//	tokenInfo, err := p.CheckAuthByStream(req)
+//	if err != nil {
+//		return
+//	}
+//	// 用户信息的使用
+//	_ = tokenInfo
+//	db := p.svr.db
+//	logger := p.svr.logger
+//	// 用户是否有权限编辑通知
+//	var myInfoByGroup models.GroupMember
+//
+//	findMemberErr := db.Model(&myInfoByGroup).Where(&models.GroupMember{
+//		GroupID:  req.GroupID,
+//		MemberID: tokenInfo.GetUserID(),
+//	}).Find(&myInfoByGroup).Error
+//
+//	if findMemberErr != nil || myInfoByGroup.MemberID == 0 || myInfoByGroup.MemberID != tokenInfo.GetUserID() {
+//		logger.Info("校验群成员信息失败", zap.Error(findMemberErr))
+//		err = errors.New("校验群成员信息失败")
+//		return
+//	}
+//
+//	if myInfoByGroup.UserType != int(api.GroupMemberUserEnumType_GroupMemberUserEnumTypeAdmin) {
+//		logger.Info("用户无权限增加群通知", zap.Int64("user_id", myInfoByGroup.MemberID))
+//
+//		err = errors.New("没有权限操作")
+//		return
+//	}
+//
+//	// 查找群
+//	var group models.GroupBaseInfo
+//	err = db.Where("group_id = ?", req.GroupID).Take(&group).Error
+//	// 失败，return
+//	if err != nil {
+//		logger.Error("查无此群", zap.Int64("group_id", req.GroupID), zap.Int64("stream_id", req.StreamID))
+//		return
+//	}
+//	// 向所有用户推送通知
+//	// 增加一条消息 到数据库
+//
+//	// 读取群成员
+//	var currentGroupMembers []*models.GroupMember
+//
+//	findMemberErr = db.Model(&models.GroupMember{}).Where(&models.GroupMember{
+//		GroupID: group.GroupID,
+//	}).Find(&currentGroupMembers).Error
+//	// 正常邀请的群不可能没有人
+//	if findMemberErr != nil || len(currentGroupMembers) == 0 {
+//		logger.Error("群成员信息错误", zap.Error(findMemberErr))
+//		err = errors.New("群信息异常")
+//		// todo  后期需要清理服务
+//		return
+//	}
+//
+//	// TODO 删除公告
+//
+//	//genMsgID := p.GenMsgID()
+//	//
+//	//newNotificationMessage := &models.SingleMessage{
+//	//	MsgID:     genMsgID.Int64(),
+//	//	CreatedAt: genMsgID.Time(),
+//	//	ChatID:    GetChatIDByBaseGroupID(req.GroupID),
+//	//	MsgStatus: int(api.MessageStatusEnum_MessageStatusSuccess),
+//	//	MsgType:   int(api.MessageTypeEnum_MessageTypeRemoveGroupNotification),
+//	//	Text:      req.Notification,
+//	//	Sender:    tokenInfo.GetUserID(),
+//	//}
+//	//
+//	//p.svr.saveMessageChan <- newNotificationMessage
+//
+//}
 
 // GetChatIDByBaseGroupID 生成群ID（规则是群ID的负数）
 func GetChatIDByBaseGroupID(groupID int64) int64 {
