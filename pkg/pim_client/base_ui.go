@@ -19,8 +19,8 @@ type BaseUIArea struct {
 	// 我的信息坐标
 	MyInfo TargetPos
 	//
-	ChatMsg TargetPos
-	//
+	ChatMsg   TargetPos
+	ChatInput TargetPos
 }
 
 func (b *BaseUIArea) Bind(gui *gocui.Gui) error {
@@ -58,9 +58,19 @@ func (b *BaseUIArea) Layout(gui *gocui.Gui) error {
 
 	b.ChatList.StartHeight = maxY - 3 - b.MyInfo.StartHeight
 
+	b.ChatMsg.Title = "Msg"
+	b.ChatMsg.StartX = b.MyInfo.StartX + b.MyInfo.StartWidth + 1
+	b.ChatMsg.StartY = b.MyInfo.StartY
+	b.ChatMsg.StartWidth = maxX - b.ChatMsg.StartX - 15
+	b.ChatMsg.StartHeight = maxY - 2 - 5
+
 	return nil
 }
 
 func (b *BaseUIArea) GetMyInfoPos() *TargetPos {
 	return &b.MyInfo
+}
+
+func (b *BaseUIArea) GetChatMsgPos() *TargetPos {
+	return &b.ChatMsg
 }

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/jroimartin/gocui"
 	"pim/api"
+	"sort"
 )
 
 type ChatListWidget struct {
@@ -96,7 +97,7 @@ func (w *ChatListWidget) UpdataListDown(pos *TargetPos) func(*gocui.Gui, *gocui.
 			return nil
 		}
 
-		if w.testIndex+pos.StartHeight < len(w.testList) {
+		if w.testIndex+pos.StartHeight < len(w.client.ChatInfos) {
 			w.testIndex++
 		}
 		view.Clear()
@@ -110,13 +111,36 @@ func (w *ChatListWidget) UpdataListDown(pos *TargetPos) func(*gocui.Gui, *gocui.
 func (w *ChatListWidget) ShowList(view *gocui.View) {
 
 	pos := w.pos
-	var showListMax = pos.StartHeight
-	if pos.StartHeight > len(w.testList)-w.testIndex {
-		showListMax = len(w.testList)
+
+	// 读取信息
+	w.chatMap = w.client.ChatInfos
+
+	var chatListUpdata []*api.ChatInfoDataType
+
+	if len(w.chatMap) == 0 {
+		return
 	}
 
+	for _, dataType := range w.chatMap {
+		chatListUpdata = append(chatListUpdata, dataType)
+	}
+
+	sort.SliceIsSorted(chatListUpdata, func(i, j int) bool {
+		return chatListUpdata[i].LastUpdateTime > chatListUpdata[j].LastUpdateTime
+	})
+
+	var showListMax = pos.StartHeight
+	if pos.StartHeight >= len(chatListUpdata)-w.testIndex {
+		showListMax = len(w.chatMap)
+	}
+
+	//fmt.Fprintln(view, "")
 	for i := 0; i < showListMax; i++ {
-		showTitle := w.testList[w.testIndex+i]
+		current := chatListUpdata[w.testIndex+i]
+		showTitle := current.ChatTitle
+		if showTitle == "" {
+			showTitle = current.ChatName
+		}
 		fmt.Fprintln(view, showTitle)
 	}
 }

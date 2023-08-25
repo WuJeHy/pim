@@ -3,14 +3,17 @@ package pim_client
 import (
 	"bufio"
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/jroimartin/gocui"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"log"
 	"os"
 	"pim/api"
+	"pim/pkg/tools"
 	"strings"
 	"time"
 )
@@ -24,6 +27,7 @@ type PimClient struct {
 	sessionFile   string
 	rpcServerUrl  string
 	connectStatus chan bool
+	ChatInfos     map[int64]*api.ChatInfoDataType
 }
 
 func (c *PimClient) CheckLogin() bool {
@@ -45,6 +49,7 @@ func (c *PimClient) CheckLogin() bool {
 
 	fmt.Println("session 读取成功. 尝试登录")
 
+	c.currentToken = string(getTokenBytes)
 	return true
 }
 
@@ -163,6 +168,7 @@ func (c *PimClient) Run() bool {
 	_ = g
 	defer g.Close()
 
+	go c.runEvent(g)
 	// 需要轮循事件
 	g.Highlight = true
 	g.Cursor = true
@@ -173,7 +179,8 @@ func (c *PimClient) Run() bool {
 
 	chatInfoWidget := NewChatInfoWidget(c, appUI)
 	chatListWidget := NewChatListWidget(c, appUI)
-	g.SetManager(appUI, chatInfoWidget, chatListWidget)
+	chatMsgWidget := NewChatMsgWidget(c, appUI)
+	g.SetManager(appUI, chatInfoWidget, chatListWidget, chatMsgWidget)
 	//g.SetManagerFunc(func(gui *gocui , .Gui) error {
 	//	return layout(c, g)
 	//})
@@ -191,6 +198,15 @@ func (c *PimClient) Run() bool {
 	}
 
 	return true
+}
+
+func NewChatMsgWidget(c *PimClient, ui *BaseUIArea) *ChatMsgWidget {
+
+	return &ChatMsgWidget{
+		BasePos: ui,
+		pos:     ui.GetChatMsgPos(),
+		client:  c,
+	}
 }
 
 type BindKeyFunc interface {
@@ -213,6 +229,64 @@ func (c *PimClient) CheckEvent() bool {
 	//}
 
 	return true
+}
+
+func (c *PimClient) runEvent(g *gocui.Gui) {
+	tokenReq := &api.TokenReq{
+		Token: c.currentToken,
+	}
+	updateEvent, err := c.clientApi.UpdateEvent(c.ctx, tokenReq)
+	if err != nil {
+		c.logger.Info("update event fail ", zap.Error(err))
+		return
+	}
+
+	for true {
+		readEvent, errEvent := updateEvent.Recv()
+		if errEvent != nil {
+			c.logger.Info("收到事件错误", zap.Error(errEvent))
+			return
+		}
+
+		g.Update(func(gui *gocui.Gui) error {
+			findMsg, err := g.View("Msg")
+
+			if err != nil {
+				c.logger.Info("not found msg s")
+				return err
+			}
+
+			var output interface{}
+			switch readEvent.Type {
+			case api.UpdateEventDataType_NewMessage:
+				var newMsg api.Message
+				err = readEvent.Body.UnmarshalTo(&newMsg)
+				output = &newMsg
+			case api.UpdateEventDataType_NewChatInfo:
+
+				var data api.ChatInfoDataType
+				err = readEvent.Body.UnmarshalTo(&data)
+				output = &data
+				c.ChatInfos[data.ChatId] = &data
+
+			case api.UpdateEventDataType_ConnectSuccess:
+				var data api.ConnectSuccessDataType
+				err = readEvent.Body.UnmarshalTo(&data)
+				output = &data
+
+			case api.UpdateEventDataType_UpdateUserInfo:
+
+				var data api.UserInfoViewerDataType
+				err = readEvent.Body.UnmarshalTo(&data)
+				output = &data
+			}
+			toJson, _ := json.Marshal(output)
+			fmt.Fprintf(findMsg, "[%s]:%s\n", readEvent.Type.String(), toJson)
+
+			return nil
+		})
+
+	}
 }
 func quit(g *gocui.Gui, v *gocui.View) error {
 	return gocui.ErrQuit
@@ -258,10 +332,14 @@ func RunClient(rpc string, sessionFile string) {
 
 	// 读取session 文件
 
+	logger_level := zapcore.DebugLevel
+	logger := tools.LoggerInitLevelTag("logs", "tui_client", &logger_level)
 	client := &PimClient{
 		ctx:          context.Background(),
 		sessionFile:  sessionFile,
 		rpcServerUrl: rpc,
+		logger:       logger,
+		ChatInfos:    map[int64]*api.ChatInfoDataType{},
 	}
 
 	//ticker := time.NewTicker(time.Second * 5)
