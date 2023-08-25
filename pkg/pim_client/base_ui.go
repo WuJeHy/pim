@@ -21,6 +21,7 @@ type BaseUIArea struct {
 	//
 	ChatMsg   TargetPos
 	ChatInput TargetPos
+	ChatSend  TargetPos
 }
 
 func (b *BaseUIArea) Bind(gui *gocui.Gui) error {
@@ -64,6 +65,12 @@ func (b *BaseUIArea) Layout(gui *gocui.Gui) error {
 	b.ChatMsg.StartWidth = maxX - b.ChatMsg.StartX - 15
 	b.ChatMsg.StartHeight = maxY - 2 - 5
 
+	b.ChatSend.Title = "Send"
+	b.ChatSend.StartX = b.ChatMsg.StartX
+	b.ChatSend.StartY = b.ChatMsg.StartY + b.ChatMsg.StartHeight + 1
+	b.ChatSend.StartWidth = maxX - b.ChatSend.StartX - 15
+	b.ChatSend.StartHeight = 2
+
 	return nil
 }
 
@@ -73,4 +80,8 @@ func (b *BaseUIArea) GetMyInfoPos() *TargetPos {
 
 func (b *BaseUIArea) GetChatMsgPos() *TargetPos {
 	return &b.ChatMsg
+}
+
+func (b *BaseUIArea) GetChatSendPos() *TargetPos {
+	return &b.ChatSend
 }

@@ -180,12 +180,13 @@ func (c *PimClient) Run() bool {
 	chatInfoWidget := NewChatInfoWidget(c, appUI)
 	chatListWidget := NewChatListWidget(c, appUI)
 	chatMsgWidget := NewChatMsgWidget(c, appUI)
-	g.SetManager(appUI, chatInfoWidget, chatListWidget, chatMsgWidget)
+	chatSendWidget := NewChatSendWidget(c, appUI)
+	g.SetManager(appUI, chatInfoWidget, chatListWidget, chatMsgWidget, chatSendWidget)
 	//g.SetManagerFunc(func(gui *gocui , .Gui) error {
 	//	return layout(c, g)
 	//})
 
-	if err := keyBindings(g, chatInfoWidget, chatListWidget); err != nil {
+	if err := keyBindings(g, chatInfoWidget, chatListWidget, chatSendWidget); err != nil {
 		log.Panicln(err)
 	}
 
@@ -198,15 +199,6 @@ func (c *PimClient) Run() bool {
 	}
 
 	return true
-}
-
-func NewChatMsgWidget(c *PimClient, ui *BaseUIArea) *ChatMsgWidget {
-
-	return &ChatMsgWidget{
-		BasePos: ui,
-		pos:     ui.GetChatMsgPos(),
-		client:  c,
-	}
 }
 
 type BindKeyFunc interface {

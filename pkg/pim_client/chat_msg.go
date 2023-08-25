@@ -4,6 +4,15 @@ import (
 	"github.com/jroimartin/gocui"
 )
 
+func NewChatMsgWidget(c *PimClient, ui *BaseUIArea) *ChatMsgWidget {
+
+	return &ChatMsgWidget{
+		BasePos: ui,
+		pos:     ui.GetChatMsgPos(),
+		client:  c,
+	}
+}
+
 type ChatMsgWidget struct {
 	BasePos *BaseUIArea
 	pos     *TargetPos
