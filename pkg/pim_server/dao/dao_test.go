@@ -13,7 +13,7 @@ import (
 func NewDemoDaoClient(closeStatus chan struct{}) APIDao {
 
 	logger := zap.NewExample()
-	dbUri := "todo"
+	dbUri := "todo" // 这里需要改成自己的
 	redisServer := "127.0.0.1"
 	redisPassword := ""
 	redisDB := 8
