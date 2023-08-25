@@ -1,6 +1,7 @@
 package pim_server
 
 import (
+	"context"
 	"errors"
 	"pim/api"
 	"pim/pkg/tools"
@@ -62,7 +63,12 @@ type PimServer struct {
 	rw      *sync.RWMutex
 	// 使用 用户id 查找流信息
 	UserStreamClientMap UserStreamClientMapType
-	GroupsCache         GroupsCache
+	//GroupsCache         GroupsCache
+}
+
+func (p *PimServer) CreateGroupChat(ctx context.Context, req *api.GroupChatReq) (*api.BaseOk, error) {
+	//TODO implement me
+	panic("implement me")
 }
 
 func SetNodeID() Option {

@@ -98,7 +98,9 @@ func (p *PimServer) CreateGroup(ctx context.Context, req *api.CreateGroupReq) (r
 	go runGroupMemberInviteProc(p, tokenInfo, groupBaseInfo, currentMembers, memberUserInfos)
 
 	// TODO 耗时操作（加入GroupsCache缓存）
-	go addGroupToCache(p, groupBaseInfo.GroupID)
+	//go addGroupToCache(p, groupBaseInfo.GroupID)
+	//NOTE  这时候不需要 这时候没有使用过这个cache
+	//deleteGroupCache(p, groupBaseInfo.GroupID)
 
 	resp = new(api.CreateGroupResp)
 	resp.GroupID = groupBaseInfo.GroupID
@@ -228,7 +230,8 @@ func (p *PimServer) GroupJoinByID(ctx context.Context, req *api.GroupJoinByIDReq
 
 	}()
 	// TODO 耗时操作（加入GroupsCache缓存）
-	go addGroupToCache(p, groupBaseInfo.GroupID)
+	//go addGroupToCache(p, groupBaseInfo.GroupID)
+	deleteGroupCache(p, groupBaseInfo.GroupID)
 
 	resp = new(api.BaseOk)
 	return
@@ -341,7 +344,9 @@ func (p *PimServer) GroupInviteMembers(ctx context.Context, req *api.GroupInvite
 	go runGroupMemberInviteProc(p, tokenInfo, groupBaseInfo, currentGroupMembers, checkMemberUserInfo)
 
 	// TODO 耗时操作（加入GroupsCache缓存）
-	go addGroupToCache(p, groupBaseInfo.GroupID)
+	//go addGroupToCache(p, groupBaseInfo.GroupID)
+
+	deleteGroupCache(p, groupBaseInfo.GroupID)
 
 	resp = new(api.BaseOk)
 
@@ -491,10 +496,17 @@ func (p *PimServer) GroupRemoveMembers(ctx context.Context, req *api.GroupRemove
 	go pushGroupMemberMessageFunc(p, findDeleteMembers, senderMsg)
 
 	// TODO 耗时操作（加入GroupsCache缓存）
-	go addGroupToCache(p, req.GroupID)
+	// NOTE 这时候没有存取的需求 , 这时候只要删除缓存即可
+
+	deleteGroupCache(p, req.GroupID)
+	//go addGroupToCache(p, req.GroupID)
 
 	resp = new(api.BaseOk)
 	return
+}
+
+func deleteGroupCache(p *PimServer, groupID int64) {
+	p.svr.dao.DeleteGroupCache(groupID)
 }
 
 // GroupEditNotification 群通知修改
@@ -823,29 +835,27 @@ func runGroupMemberInviteProc(p *PimServer, tokenInfo TokenInfo, group models.Gr
 	}
 }
 
-func addGroupToCache(p *PimServer, groupID int64) {
-	_, err := p.svr.dao.QueryAllByGroupID(groupID)
-	if err != nil {
-		p.svr.logger.Error("添加群缓存失败", zap.Int64("groupID", groupID))
-	}
-}
+//
+//func addGroupToCache(p *PimServer, groupID int64) {
+//	_, err := p.svr.dao.QueryAllByGroupID(groupID)
+//	if err != nil {
+//		p.svr.logger.Error("添加群缓存失败", zap.Int64("groupID", groupID))
+//	}
+//}
 
-// GroupsCache groupID -> userID -> groupMember
-type GroupsCache map[int64]*SingleGroupCache
-type SingleGroupCache map[int64]*models.GroupMember
+// 这个基本没用
+//func GroupsCachePushEventToGroup(g models.GroupsCache, p *PimServer, groupID int64, event *api.UpdateEventDataType) (single *models.SingleGroupCache, err error) {
+//	// TODO implements
+//	group, has := g[groupID]
+//	if has {
+//		SingleGroupCachePushEventsToEveryone(&group, p, event)
+//	}
+//	return
+//}
 
-func (g GroupsCache) PushEventToGroup(p *PimServer, groupID int64, event *api.UpdateEventDataType) (single *SingleGroupCache, err error) {
+func SingleGroupCachePushEventsToEveryone(s *models.SingleGroupCache, p *PimServer, event *api.UpdateEventDataType) {
 	// TODO implements
-	group, has := g[groupID]
-	if has {
-		group.PushEventsToEveryone(p, event)
-	}
-	return
-}
-
-func (s SingleGroupCache) PushEventsToEveryone(p *PimServer, event *api.UpdateEventDataType) {
-	// TODO implements
-	for _, member := range s {
+	for _, member := range *s {
 		p.UserStreamClientMap.PushUserEvent(member.MemberID, event)
 	}
 	return

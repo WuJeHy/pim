@@ -84,4 +84,5 @@ const (
 // Redis前缀
 const (
 	RedisUserChatListPrefix = "UCI"
+	RedisGroupMemberPrefix  = "GMB"
 )

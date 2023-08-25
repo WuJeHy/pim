@@ -10,7 +10,6 @@ import (
 	"pim/api"
 	"pim/pkg/codes"
 	"pim/pkg/models"
-	"pim/pkg/pim_server"
 	"pim/pkg/tools"
 	"sync"
 	"time"
@@ -49,7 +48,12 @@ type Dao struct {
 
 func (d *Dao) DeleteUserInfoCache(userID int64) error {
 	//TODO 因为使用的是直接数据库 不需要删缓存
+	rkey := fmt.Sprintf("%s:%X", codes.RedisUserChatListPrefix, userID)
+
+	d.RemoveKey(rkey)
+
 	return nil
+
 }
 
 func (d *Dao) GetUserInfoByID(userid int64) (info *models.UserInfoViewer, err error) {
@@ -171,8 +175,16 @@ func (d *Dao) GetChatInfoByID(myUserID int64, chatID int64) (info *api.ChatInfoD
 	return
 }
 
+func (d *Dao) DeleteGroupCache(groupID int64) {
+	//TODO implement me
+	rkey := fmt.Sprintf("%s:%X", codes.RedisGroupMemberPrefix, groupID)
+
+	d.RemoveKey(rkey)
+
+}
+
 // QueryAllByGroupID 通过群ID获取所有成员
-func (d *Dao) QueryAllByGroupID(groupID int64) (ms []*models.GroupMember, err error) {
+func (d *Dao) QueryAllByGroupID(groupID int64) (ms *models.SingleGroupCache, err error) {
 	// TODO implements
 	// 检查groupID合法性
 	if groupID >= 0 {
@@ -182,7 +194,7 @@ func (d *Dao) QueryAllByGroupID(groupID int64) (ms []*models.GroupMember, err er
 
 	// TODO wujehy  查询成员需要先 缓存读取 没有再数据库查询
 
-	rkey := fmt.Sprintf("%s:%X", "GROUPS", groupID)
+	rkey := fmt.Sprintf("%s:%X", codes.RedisGroupMemberPrefix, groupID)
 
 	members, err := d.GetCacheKey(rkey, true)
 	if err != nil {
@@ -191,9 +203,19 @@ func (d *Dao) QueryAllByGroupID(groupID int64) (ms []*models.GroupMember, err er
 		// TODO wujehy 注意下面 的存入的值 对应取 不然会有很大的问题
 
 		switch targetValue := members.(type) {
-		case []*models.GroupMember:
+		case *models.SingleGroupCache:
+			//ms = targetValue
+
+			// 解
 			ms = targetValue
-			err = nil
+			//
+			//for uid, member := range cacheInfo {
+			//	_ = uid
+			//	ms = append(ms, member)
+			//}
+			//
+			//err = nil
+
 			return
 		}
 
@@ -201,43 +223,49 @@ func (d *Dao) QueryAllByGroupID(groupID int64) (ms []*models.GroupMember, err er
 
 	// TODO  这些抖不符合条件的 需要从数据库缓存
 	// 从数据库获取群成员
-	err = d.db.Where(&models.GroupMember{GroupID: groupID}).Find(&ms).Error
-	if len(ms) != 0 {
+	var membersDB []*models.GroupMember
+	err = d.db.Where(&models.GroupMember{GroupID: groupID}).Find(&membersDB).Error
+	if len(membersDB) != 0 {
 		// TODO wujehy 知道长度的情况下 分配指定长度的内存mao
 		//singleGroup := make(pim_server.SingleGroupCache, 8)
-		singleGroup := make(pim_server.SingleGroupCache, len(ms))
-		for _, m := range ms {
+		singleGroup := make(models.SingleGroupCache, len(membersDB))
+		for _, m := range membersDB {
 			singleGroup[m.MemberID] = m
 		}
 		// TODO 这里有问题 存入的数据是 *pim_server.SingleGroupCache
 		d.AddValue(rkey, &singleGroup)
+		ms = &singleGroup
 	}
 	return
 }
 
-// QueryAllSpecificByGroupID 通过群ID获取指定用户ID的所有成员（貌似没啥用）
-func (d *Dao) QueryAllSpecificByGroupID(groupID int64, members []int64) (ms []*models.GroupMember, err error) {
-	// TODO implements
-	// 检查groupID合法性
-	if groupID >= 0 {
-		err = errors.New("GroupID is illegal")
-		return
-	}
-	if len(members) == 0 {
-		return
-	}
-	// 从数据库获取群成员
-	err = d.db.Where("group_id = ? and member_id in ? ", groupID, members).Find(&ms).Error
-	if len(ms) != 0 {
-		singleGroup := make(pim_server.SingleGroupCache, 8)
-		for _, m := range ms {
-			singleGroup[m.MemberID] = m
-		}
-		rkey := fmt.Sprintf("%s:%X", "GROUPS", groupID)
-		d.AddValue(rkey, &singleGroup)
-	}
-	return
-}
+// 这个接口没有实际用途
+//// QueryAllSpecificByGroupID 通过群ID获取指定用户ID的所有成员（貌似没啥用）
+//func (d *Dao) QueryAllSpecificByGroupID(groupID int64, members []int64) (ms []*models.GroupMember, err error) {
+//	// TODO implements
+//	// 检查groupID合法性
+//	if groupID >= 0 {
+//		err = errors.New("GroupID is illegal")
+//		return
+//	}
+//	if len(members) == 0 {
+//		return
+//	}
+//	// 从数据库获取群成员
+//	//err = d.db.Where("group_id = ? and member_id in ? ", groupID, members).Find(&ms).Error
+//	//if len(ms) != 0 {
+//	//	singleGroup := make(models.SingleGroupCache, 8)
+//	//	for _, m := range ms {
+//	//		singleGroup[m.MemberID] = m
+//	//	}
+//	//	rkey := fmt.Sprintf("%s:%X", "GROUPS", groupID)
+//	//	d.AddValue(rkey, &singleGroup)
+//	//}
+//
+//	// 获取全部成员
+//
+//	return
+//}
 
 func GetChatInfoCacheValue(d *Dao, key string) (info *api.ChatInfoDataType, err error) {
 	// 同时更新有效期
@@ -315,10 +343,29 @@ func (d *Dao) DoClearKey(timeNow time.Time) {
 }
 
 func (d *Dao) AddValue(key string, value interface{}) {
+	if d == nil {
+		return
+	}
+	if d.cacheGlobalMap == nil {
+		return
+	}
 	valueWarp := NewValue(value)
 	d.rw.Lock()
 	defer d.rw.Unlock()
 	d.cacheGlobalMap[key] = valueWarp
+}
+
+func (d *Dao) RemoveKey(key string) {
+	d.rw.Lock()
+	defer d.rw.Lock()
+	if d == nil {
+		return
+	}
+	if d.cacheGlobalMap == nil {
+		return
+	}
+
+	delete(d.cacheGlobalMap, key)
 }
 
 func NewDao(logger *zap.Logger, db *gorm.DB, redisPool *redis.Pool, closeState <-chan struct{}) APIDao {
@@ -350,9 +397,8 @@ type UserDao interface {
 
 type GroupDao interface {
 	// QueryAllByGroupID 通过群ID获取所有成员
-	QueryAllByGroupID(groupID int64) ([]*models.GroupMember, error)
-	// QueryAllSpecificByGroupID 通过群ID获取指定用户ID的所有成员
-	QueryAllSpecificByGroupID(groupID int64, members []int64) ([]*models.GroupMember, error)
+	QueryAllByGroupID(groupID int64) (*models.SingleGroupCache, error)
+	DeleteGroupCache(groupID int64)
 }
 
 type APIDao interface {

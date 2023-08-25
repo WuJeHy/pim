@@ -1,6 +1,7 @@
 package pim_server
 
 import (
+	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/anypb"
 	"pim/api"
 	"pim/pkg/tools"
@@ -11,6 +12,7 @@ func (s *server) StartSenderMessageEventService() {
 
 	// 处理发送消息的数据
 
+	logger := s.logger
 	procSenderMsg := func(msg *api.Message) {
 		defer tools.HandlePanic(s.logger, "StartSenderMessageEventServiceProcMessage")
 
@@ -32,7 +34,35 @@ func (s *server) StartSenderMessageEventService() {
 				// 耗时操作（向群成员分发）
 				// 获取所有群成员
 				// go for分发
+				// 处理群消息的推送
+				// 这里才是用群大户
 
+				// 群的推送最简单 不需要 修改 chat id 因为所有成员的chat 都是 群id
+				// 这个是推送服务
+
+				// 读取群缓存
+
+				groupID := 0 - msg.ChatID
+				getCacheGroupMember, err := s.dao.QueryAllByGroupID(groupID)
+
+				if err != nil {
+					// 推送失败
+
+					logger.Error("group push fail", zap.Error(err))
+					return
+				}
+
+				// 向 成员推送群消息
+
+				//这时候群的 chat id 不便 发送者不变 直接可以转发
+				targetUserMessageBody, _ := anypb.New(msg)
+				pushTargetEventData := &api.UpdateEventDataType{
+					Type: api.UpdateEventDataType_NewMessage,
+					Body: targetUserMessageBody,
+				}
+
+				// 向群成员推送消息
+				SingleGroupCachePushEventsToEveryone(getCacheGroupMember, s.pim, pushTargetEventData)
 			} else if targetChatType == 0x100000000000 {
 				// 超级群 -- 100000 人规模 公开
 

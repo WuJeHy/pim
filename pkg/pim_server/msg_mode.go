@@ -115,6 +115,12 @@ func (p *PimServer) SendMessage(ctx context.Context, req *api.SendMessageReq) (r
 
 	if req.ChatID > 0 {
 		//这是私聊的消息
+	} else if req.ChatID == 0 {
+		err = errors.New("无效的chat info")
+		return
+	} else {
+		// 剩下的就是群的了
+		// 群的消息和普通的一样保存
 	}
 
 	msgID := p.GenMsgID()
