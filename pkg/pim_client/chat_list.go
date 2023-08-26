@@ -3,6 +3,7 @@ package pim_client
 import (
 	"fmt"
 	"github.com/jroimartin/gocui"
+	"go.uber.org/zap"
 	"pim/api"
 	"sort"
 )
@@ -10,9 +11,9 @@ import (
 type ChatListWidget struct {
 	BasePos         *BaseUIArea
 	pos             *TargetPos
+	client          *PimClient
 	currentTopIndex int
 	chatMap         map[int64]*api.ChatInfoDataType
-	client          *PimClient
 	testList        []string
 	testIndex       int
 }
@@ -26,6 +27,10 @@ func (w *ChatListWidget) Bind(gui *gocui.Gui) error {
 		return err
 	}
 	if err := gui.SetKeybinding(pos.Title, gocui.MouseWheelUp, gocui.ModNone, w.UpdataListUp(pos)); err != nil {
+		return err
+	}
+
+	if err := gui.SetKeybinding(pos.Title, gocui.MouseLeft, gocui.ModNone, w.SelectChat(pos)); err != nil {
 		return err
 	}
 	return nil
@@ -64,6 +69,8 @@ func (w *ChatListWidget) Layout(g *gocui.Gui) error {
 			return err
 		}
 		v.Title = pos.Title
+		v.Highlight = true
+
 		//v.Autoscroll = true
 
 		w.ShowList(v)
@@ -74,7 +81,7 @@ func (w *ChatListWidget) Layout(g *gocui.Gui) error {
 
 func (w *ChatListWidget) UpdataListUp(pos *TargetPos) func(*gocui.Gui, *gocui.View) error {
 	return func(gui *gocui.Gui, view *gocui.View) error {
-		if view.Title != pos.Title {
+		if view.Name() != pos.Title {
 			//fmt.Println("ui fail", view.Title)
 			return nil
 		}
@@ -92,7 +99,7 @@ func (w *ChatListWidget) UpdataListUp(pos *TargetPos) func(*gocui.Gui, *gocui.Vi
 
 func (w *ChatListWidget) UpdataListDown(pos *TargetPos) func(*gocui.Gui, *gocui.View) error {
 	return func(gui *gocui.Gui, view *gocui.View) error {
-		if view.Title != pos.Title {
+		if view.Name() != pos.Title {
 			//fmt.Println("ui fail", view.Title)
 			return nil
 		}
@@ -144,3 +151,48 @@ func (w *ChatListWidget) ShowList(view *gocui.View) {
 		fmt.Fprintln(view, showTitle)
 	}
 }
+
+func (w *ChatListWidget) SelectChat(pos *TargetPos) func(*gocui.Gui, *gocui.View) error {
+	logger := w.client.logger
+	return func(gui *gocui.Gui, view *gocui.View) error {
+
+		if view.Name() != pos.Title {
+			return nil
+		}
+		currentX, currnetY := view.Cursor()
+		_ = currentX
+		viewBuffer := view.ViewBufferLines()
+
+		if currnetY > len(viewBuffer)-1 {
+			return nil
+		}
+
+		selectList := viewBuffer[currnetY]
+
+		logger.Info("select chat name ", zap.String("title", selectList))
+
+		for _, infoDataType := range w.chatMap {
+			if infoDataType.ChatTitle == selectList || infoDataType.ChatName == selectList {
+				// 选择了这个chat
+
+				//w.
+				w.client.currentChatInfoWidget.currentChatInfo = infoDataType
+
+				//updataChatInfo(w.client, w.BasePos, gui, infoDataType)
+				//gui.Update(w.client.currentChatInfoWidget.Layout)
+				gui.Update(w.client.currentChatInfoWidget.updataView)
+				return nil
+
+			}
+		}
+
+		//currentSelect , err :=
+		return nil
+	}
+}
+
+//func updataChatInfo(client *PimClient, basePos *BaseUIArea, gui *gocui.Gui, dataType *api.ChatInfoDataType) {
+//	gui.Update(func(gui *gocui.Gui) error {
+//
+//	})
+//}

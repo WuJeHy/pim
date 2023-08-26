@@ -71,6 +71,12 @@ func (b *BaseUIArea) Layout(gui *gocui.Gui) error {
 	b.ChatSend.StartWidth = maxX - b.ChatSend.StartX - 15
 	b.ChatSend.StartHeight = 2
 
+	b.ChatInfo.Title = "ChatInfo"
+	b.ChatInfo.StartX = b.ChatMsg.StartX + b.ChatMsg.StartWidth + 1
+	b.ChatInfo.StartY = b.ChatMsg.StartY
+	b.ChatInfo.StartWidth = maxX - b.ChatInfo.StartX - 1
+	b.ChatInfo.StartHeight = b.ChatMsg.StartHeight
+
 	return nil
 }
 

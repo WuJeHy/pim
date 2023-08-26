@@ -3,6 +3,7 @@ package pim_client
 import (
 	"github.com/jroimartin/gocui"
 	"go.uber.org/zap"
+	"pim/api"
 	"strings"
 )
 
@@ -86,7 +87,27 @@ func (c *ChatSendWidget) ProcLeftButton(pos *TargetPos) func(*gocui.Gui, *gocui.
 	//	//}
 	//	return view.SetCursor(x, line)
 	//}
-	return cursorDown
+	return func(g *gocui.Gui, v *gocui.View) error {
+		if v != nil {
+
+			if v.Name() != pos.Title {
+				return nil
+			}
+			if _, err := g.SetCurrentView(pos.Title); err != nil {
+				return err
+			}
+			//cx, cy := v.Cursor()
+			viewData := v.ViewBuffer()
+
+			if err := v.SetCursor(0, len(strings.TrimSpace(viewData))); err != nil {
+				//ox, oy := v.Origin()
+				//if err := v.SetOrigin(ox, oy); err != nil {
+				//	return err
+				//}
+			}
+		}
+		return nil
+	}
 }
 
 func (c *ChatSendWidget) SenderMessage(pos *TargetPos) func(*gocui.Gui, *gocui.View) error {
@@ -97,26 +118,38 @@ func (c *ChatSendWidget) SenderMessage(pos *TargetPos) func(*gocui.Gui, *gocui.V
 
 		view.EditNewLine()
 		view.Clear()
+
+		// 发送消息
+
+		if c.client.currentChatInfoWidget.currentChatInfo == nil {
+			logger.Info("没有发送的消息")
+			return nil
+		}
+
+		targetChatID := c.client.currentChatInfoWidget.currentChatInfo.ChatId
+
+		// send msg
+
+		msgReq := &api.SendMessageReq{
+			ChatID:      targetChatID,
+			Type:        api.MessageTypeEnum_MessageTypeText,
+			StreamID:    c.client.streamID,
+			MessageText: msg,
+		}
+
+		sendResp, err := c.client.clientApi.SendMessage(c.client.ctx, msgReq)
+		if err != nil {
+			logger.Info("发送失败", zap.Error(err))
+			return nil
+		}
+
+		// 发送成功
+		logger.Info("success", zap.Any("resp", sendResp))
+
 		return nil
 	}
 }
-func cursorDown(g *gocui.Gui, v *gocui.View) error {
-	if v != nil {
-		if _, err := g.SetCurrentView(v.Title); err != nil {
-			return err
-		}
-		//cx, cy := v.Cursor()
-		viewData := v.ViewBuffer()
 
-		if err := v.SetCursor(0, len(strings.TrimSpace(viewData))); err != nil {
-			//ox, oy := v.Origin()
-			//if err := v.SetOrigin(ox, oy); err != nil {
-			//	return err
-			//}
-		}
-	}
-	return nil
-}
 func NewChatSendWidget(c *PimClient, base *BaseUIArea) *ChatSendWidget {
 	return &ChatSendWidget{
 		client:  c,

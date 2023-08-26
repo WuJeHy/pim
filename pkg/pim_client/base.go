@@ -22,12 +22,14 @@ type PimClient struct {
 	clientApi api.PimServerClient
 	logger    *zap.Logger
 	//db        *gorm.DB
-	ctx           context.Context
-	currentToken  string
-	sessionFile   string
-	rpcServerUrl  string
-	connectStatus chan bool
-	ChatInfos     map[int64]*api.ChatInfoDataType
+	ctx                   context.Context
+	currentToken          string
+	sessionFile           string
+	rpcServerUrl          string
+	connectStatus         chan bool
+	ChatInfos             map[int64]*api.ChatInfoDataType
+	currentChatInfoWidget *ChatInfoWidget
+	streamID              int64
 }
 
 func (c *PimClient) CheckLogin() bool {
@@ -147,7 +149,7 @@ func (c *PimClient) doLoginRpc() bool {
 	return true
 }
 
-func NewChatInfoWidget(c *PimClient, ui *BaseUIArea) *MyInfoWidget {
+func NewMyInfoWidget(c *PimClient, ui *BaseUIArea) *MyInfoWidget {
 	return &MyInfoWidget{
 		BasePos: ui,
 		pos:     ui.GetMyInfoPos(),
@@ -177,16 +179,20 @@ func (c *PimClient) Run() bool {
 	g.Mouse = true
 	appUI := &BaseUIArea{}
 
-	chatInfoWidget := NewChatInfoWidget(c, appUI)
+	myInfoWidget := NewMyInfoWidget(c, appUI)
 	chatListWidget := NewChatListWidget(c, appUI)
 	chatMsgWidget := NewChatMsgWidget(c, appUI)
 	chatSendWidget := NewChatSendWidget(c, appUI)
-	g.SetManager(appUI, chatInfoWidget, chatListWidget, chatMsgWidget, chatSendWidget)
+	chatInfoWidget := NewChatInfoWidget(c, appUI)
+
+	c.currentChatInfoWidget = chatInfoWidget
+
+	g.SetManager(appUI, myInfoWidget, chatListWidget, chatMsgWidget, chatSendWidget, chatInfoWidget)
 	//g.SetManagerFunc(func(gui *gocui , .Gui) error {
 	//	return layout(c, g)
 	//})
 
-	if err := keyBindings(g, chatInfoWidget, chatListWidget, chatSendWidget); err != nil {
+	if err := keyBindings(g, myInfoWidget, chatListWidget, chatSendWidget); err != nil {
 		log.Panicln(err)
 	}
 
@@ -265,6 +271,7 @@ func (c *PimClient) runEvent(g *gocui.Gui) {
 				var data api.ConnectSuccessDataType
 				err = readEvent.Body.UnmarshalTo(&data)
 				output = &data
+				c.streamID = data.StreamID
 
 			case api.UpdateEventDataType_UpdateUserInfo:
 
